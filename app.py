@@ -1,4 +1,5 @@
 import os
+import textwrap
 import psycopg2
 import pandas as pd
 import plotly.express as px
@@ -56,11 +57,11 @@ def get_db_connection():
 
 def get_psi_grade_color(score):
     if score >= 90:
-        return "#0cce6b", "#e6f4ea"  # Green
+        return "#0cce6b", "#e6f4ea"
     elif score >= 50:
-        return "#ffa400", "#fef7e0"  # Orange/Amber
+        return "#ffa400", "#fef7e0"
     else:
-        return "#ff4e42", "#fce8e6"  # Red
+        return "#ff4e42", "#fce8e6"
 
 is_admin = st.session_state.get("role") == "admin"
 tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
@@ -68,6 +69,10 @@ tabs = st.tabs(tab_titles)
 
 # TAB 1: EXECUTIVE BRIEFING (PageSpeed Insights Replica)
 with tabs[0]:
+    col_sel1, col_sel2 = st.columns([2, 4])
+    with col_sel1:
+        selected_strategy = st.radio("Select Form Factor", ["mobile", "desktop"], horizontal=True)
+
     with get_db_connection() as conn:
         df = pd.read_sql_query("SELECT * FROM web_performance_logs WHERE recorded_at >= NOW() - INTERVAL '30 days' ORDER BY recorded_at ASC;", conn)
 
@@ -75,10 +80,14 @@ with tabs[0]:
         st.info("No performance telemetry recorded yet.")
     else:
         df["recorded_at"] = pd.to_datetime(df["recorded_at"], utc=True)
-        latest_row = df.iloc[-1]
+        
+        df_strat = df[df["strategy"] == selected_strategy]
+        if df_strat.empty:
+            df_strat = df  
+
+        latest_row = df_strat.iloc[-1]
         
         target_url = latest_row.get("target_url", "https://towtrust.cloudfyuat.com")
-        strategy = latest_row.get("strategy", "mobile")
         perf_score = int(latest_row.get("perf_score", 0))
         
         avg_lcp = latest_row.get("lcp_ms", 0.0) / 1000.0
@@ -88,32 +97,31 @@ with tabs[0]:
         
         score_color, score_bg = get_psi_grade_color(perf_score)
         
-        # PSI Top URL Bar Header Container
-        st.markdown(f"""
+        url_bar_html = textwrap.dedent(f"""
         <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);">
             <div>
                 <span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span>
                 <div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div>
             </div>
             <div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">
-                📱 Form Factor: {strategy}
+                💻 Form Factor: {selected_strategy}
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
+        st.markdown(url_bar_html, unsafe_allow_html=True)
 
-        # Core Web Vitals Definition Banner
-        st.markdown("""
+        banner_html = textwrap.dedent("""
         <div style="background-color: #f8f9fa; border-left: 4px solid #1a73e8; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; color: #3c4043;">
             <strong>Core Web Vitals Assessment:</strong> Google evaluates real-world user experience and lab performance against strict thresholds. 
             <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; text-decoration: none; font-weight: 500;">Learn more about Core Web Vitals metrics &rarr;</a>
         </div>
-        """, unsafe_allow_html=True)
+        """)
+        st.markdown(banner_html, unsafe_allow_html=True)
 
-        # PSI Score Gauge & Category Section
         col_gauge, col_metrics = st.columns([1, 2.5])
         
         with col_gauge:
-            st.markdown(f"""
+            gauge_html = textwrap.dedent(f"""
             <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 28px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                 <div style="font-size: 14px; font-weight: 500; color: #5f6368; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div>
                 <div style="width: 110px; height: 110px; border-radius: 50%; border: 8px solid {score_color}; background-color: {score_bg}; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
@@ -121,7 +129,8 @@ with tabs[0]:
                 </div>
                 <div style="font-size: 12px; color: #5f6368;">Scale: 0-49 (Poor) | 50-89 (Average) | 90-100 (Good)</div>
             </div>
-            """, unsafe_allow_html=True)
+            """)
+            st.markdown(gauge_html, unsafe_allow_html=True)
 
         with col_metrics:
             lcp_color = "#0cce6b" if avg_lcp <= 2.5 else ("#ffa400" if avg_lcp <= 4.0 else "#ff4e42")
@@ -129,7 +138,7 @@ with tabs[0]:
             cls_color = "#0cce6b" if avg_cls <= 0.10 else ("#ffa400" if avg_cls <= 0.25 else "#ff4e42")
             ttfb_color = "#0cce6b" if avg_ttfb <= 800 else ("#ffa400" if avg_ttfb <= 1800 else "#ff4e42")
 
-            st.markdown(f"""
+            metrics_html = textwrap.dedent(f"""
             <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                 <div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">Diagnostics & Core Web Vitals Breakdown</div>
                 
@@ -159,7 +168,8 @@ with tabs[0]:
                     </div>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """)
+            st.markdown(metrics_html, unsafe_allow_html=True)
 
 # TAB 2: URL VITALS
 with tabs[1]:
