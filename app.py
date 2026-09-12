@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-st.set_page_config(page_title="Tow-Trust Web Health Facility", layout="wide")
+st.set_page_config(page_title="Tow-Trust ECommerce Performance and Synthetic Testing Solution", layout="wide")
 
 DB_URI = st.secrets.get("DATABASE_URL") or os.getenv("DATABASE_URL")
 API_KEY = st.secrets.get("PAGESPEED_API_KEY") or os.getenv("PAGESPEED_API_KEY", "")
