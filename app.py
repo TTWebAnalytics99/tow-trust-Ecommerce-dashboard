@@ -1,5 +1,4 @@
 import os
-import textwrap
 import psycopg2
 import pandas as pd
 import plotly.express as px
@@ -97,39 +96,16 @@ with tabs[0]:
         
         score_color, score_bg = get_psi_grade_color(perf_score)
         
-        url_bar_html = textwrap.dedent(f"""
-        <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);">
-            <div>
-                <span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span>
-                <div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div>
-            </div>
-            <div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">
-                💻 Form Factor: {selected_strategy}
-            </div>
-        </div>
-        """)
+        url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {selected_strategy}</div></div>'
         st.markdown(url_bar_html, unsafe_allow_html=True)
 
-        banner_html = textwrap.dedent("""
-        <div style="background-color: #f8f9fa; border-left: 4px solid #1a73e8; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; color: #3c4043;">
-            <strong>Core Web Vitals Assessment:</strong> Google evaluates real-world user experience and lab performance against strict thresholds. 
-            <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; text-decoration: none; font-weight: 500;">Learn more about Core Web Vitals metrics &rarr;</a>
-        </div>
-        """)
+        banner_html = '<div style="background-color: #f8f9fa; border-left: 4px solid #1a73e8; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; color: #3c4043;"><strong>Core Web Vitals Assessment:</strong> Google evaluates real-world user experience and lab performance against strict thresholds. <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; text-decoration: none; font-weight: 500;">Learn more about Core Web Vitals metrics &rarr;</a></div>'
         st.markdown(banner_html, unsafe_allow_html=True)
 
         col_gauge, col_metrics = st.columns([1, 2.5])
         
         with col_gauge:
-            gauge_html = textwrap.dedent(f"""
-            <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 28px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                <div style="font-size: 14px; font-weight: 500; color: #5f6368; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div>
-                <div style="width: 110px; height: 110px; border-radius: 50%; border: 8px solid {score_color}; background-color: {score_bg}; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
-                    <span style="font-size: 38px; font-weight: 700; color: {score_color};">{perf_score}</span>
-                </div>
-                <div style="font-size: 12px; color: #5f6368;">Scale: 0-49 (Poor) | 50-89 (Average) | 90-100 (Good)</div>
-            </div>
-            """)
+            gauge_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 28px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;"><div style="font-size: 14px; font-weight: 500; color: #5f6368; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div><div style="width: 110px; height: 110px; border-radius: 50%; border: 8px solid {score_color}; background-color: {score_bg}; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;"><span style="font-size: 38px; font-weight: 700; color: {score_color};">{perf_score}</span></div><div style="font-size: 12px; color: #5f6368;">Scale: 0-49 (Poor) | 50-89 (Average) | 90-100 (Good)</div></div>'
             st.markdown(gauge_html, unsafe_allow_html=True)
 
         with col_metrics:
@@ -138,37 +114,7 @@ with tabs[0]:
             cls_color = "#0cce6b" if avg_cls <= 0.10 else ("#ffa400" if avg_cls <= 0.25 else "#ff4e42")
             ttfb_color = "#0cce6b" if avg_ttfb <= 800 else ("#ffa400" if avg_ttfb <= 1800 else "#ff4e42")
 
-            metrics_html = textwrap.dedent(f"""
-            <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">Diagnostics & Core Web Vitals Breakdown</div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-                    <div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {lcp_color};">
-                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Largest Contentful Paint (LCP)</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_lcp:.2f} s</div>
-                        <div style="font-size: 11px; color: #5f6368;">Target: ≤ 2.5s (Good)</div>
-                    </div>
-                    
-                    <div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {tbt_color};">
-                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Total Blocking Time (TBT)</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_tbt:.0f} ms</div>
-                        <div style="font-size: 11px; color: #5f6368;">Target: ≤ 200 ms</div>
-                    </div>
-                    
-                    <div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {cls_color};">
-                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Cumulative Layout Shift (CLS)</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_cls:.3f}</div>
-                        <div style="font-size: 11px; color: #5f6368;">Target: ≤ 0.10 (Good)</div>
-                    </div>
-                    
-                    <div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {ttfb_color};">
-                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Server Response Time (TTFB)</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_ttfb:.0f} ms</div>
-                        <div style="font-size: 11px; color: #5f6368;">Target: ≤ 800 ms</div>
-                    </div>
-                </div>
-            </div>
-            """)
+            metrics_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"><div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">Diagnostics & Core Web Vitals Breakdown</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;"><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {lcp_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Largest Contentful Paint (LCP)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_lcp:.2f} s</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 2.5s (Good)</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {tbt_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Total Blocking Time (TBT)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_tbt:.0f} ms</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 200 ms</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {cls_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Cumulative Layout Shift (CLS)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_cls:.3f}</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 0.10 (Good)</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {ttfb_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Server Response Time (TTFB)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_ttfb:.0f} ms</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 800 ms</div></div></div></div>'
             st.markdown(metrics_html, unsafe_allow_html=True)
 
 # TAB 2: URL VITALS
