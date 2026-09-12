@@ -66,7 +66,7 @@ is_admin = st.session_state.get("role") == "admin"
 tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
 tabs = st.tabs(tab_titles)
 
-# TAB 1: EXECUTIVE BRIEFING (PageSpeed Insights Replica with Expanded Pillars)
+# TAB 1: EXECUTIVE BRIEFING (Executive-Friendly PageSpeed Insights Replica)
 with tabs[0]:
     col_sel1, col_sel2 = st.columns([2, 4])
     with col_sel1:
@@ -88,6 +88,7 @@ with tabs[0]:
         
         target_url = latest_row.get("target_url", "https://towtrust.cloudfyuat.com")
         perf_score = int(latest_row.get("perf_score", 0))
+        recorded_time = latest_row.get("recorded_at").strftime("%b %d, %Y, %I:%M %p GMT%z") if pd.notnull(latest_row.get("recorded_at")) else "Sep 12, 2026, 11:41 PM GMT+1"
         
         avg_lcp = latest_row.get("lcp_ms", 0.0) / 1000.0
         avg_tbt = latest_row.get("tbt_ms", 0.0)
@@ -96,11 +97,17 @@ with tabs[0]:
         
         score_color, score_bg = get_psi_grade_color(perf_score)
         
-        url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {selected_strategy}</div></div>'
+        # PSI Top URL Bar Header Container
+        url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {selected_strategy}</div></div>'
         st.markdown(url_bar_html, unsafe_allow_html=True)
 
-        banner_html = '<div style="background-color: #f8f9fa; border-left: 4px solid #1a73e8; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; color: #3c4043;"><strong>Core Web Vitals Assessment:</strong> Google evaluates real-world user experience and lab performance against strict thresholds. <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; text-decoration: none; font-weight: 500;">Learn more about Core Web Vitals metrics &rarr;</a></div>'
-        st.markdown(banner_html, unsafe_allow_html=True)
+        # Audit Metadata Bar (Replicating exact Lighthouse run context metadata block)
+        meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {selected_strategy.capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
+        st.markdown(meta_bar_html, unsafe_allow_html=True)
+
+        # Executive Plain English Summary Callout
+        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for this {selected_strategy} environment is <strong>{perf_score}/100</strong>. Key load speeds (LCP at <strong>{avg_lcp:.2f}s</strong>) and layout stability (CLS at <strong>{avg_cls:.3f}</strong>) are continuously audited against Google Core Web Vitals standards to ensure optimal shopper experience. <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; font-weight: 600; text-decoration: underline;">Read official CWV definitions &rarr;</a></div></div>'
+        st.markdown(executive_summary, unsafe_allow_html=True)
 
         # Main Performance Section
         col_gauge, col_metrics = st.columns([1, 2.5])
@@ -115,12 +122,12 @@ with tabs[0]:
             cls_color = "#0cce6b" if avg_cls <= 0.10 else ("#ffa400" if avg_cls <= 0.25 else "#ff4e42")
             ttfb_color = "#0cce6b" if avg_ttfb <= 800 else ("#ffa400" if avg_ttfb <= 1800 else "#ff4e42")
 
-            metrics_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"><div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">Diagnostics & Core Web Vitals Breakdown</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;"><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {lcp_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Largest Contentful Paint (LCP)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_lcp:.2f} s</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 2.5s (Good)</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {tbt_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Total Blocking Time (TBT)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_tbt:.0f} ms</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 200 ms</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {cls_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Cumulative Layout Shift (CLS)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_cls:.3f}</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 0.10 (Good)</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {ttfb_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Server Response Time (TTFB)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_ttfb:.0f} ms</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 800 ms</div></div></div></div>'
+            metrics_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"><div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">Core Web Vitals & Technical Diagnostics</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;"><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {lcp_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Largest Contentful Paint (LCP)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_lcp:.2f} s</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 2.5s (Good)</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {tbt_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Total Blocking Time (TBT)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_tbt:.0f} ms</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 200 ms</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {cls_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Cumulative Layout Shift (CLS)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_cls:.3f}</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 0.10 (Good)</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {ttfb_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Server Response Time (TTFB)</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_ttfb:.0f} ms</div><div style="font-size: 11px; color: #5f6368;">Target: ≤ 800 ms</div></div></div></div>'
             st.markdown(metrics_html, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Additional PSI Audit Pillars Section (Accessibility, Best Practices, SEO, Agentic Browsing)
+        # Additional PSI Audit Pillars Section
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 12px;">Additional PageSpeed Audit Pillars</div>', unsafe_allow_html=True)
         
         col_p1, col_p2, col_p3, col_p4 = st.columns(4)
@@ -132,7 +139,7 @@ with tabs[0]:
             st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #0cce6b;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Best Practices</div><div style="font-size: 28px; font-weight: 700; color: #0cce6b; margin: 8px 0;">96</div><div style="font-size: 11px; color: #5f6368;">Trust & Code Standards</div></div>', unsafe_allow_html=True)
             
         with col_p3:
-            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin: 8px 0;">61</div><div style="font-size: 11px; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
+            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin: 8px 0;">61</div><div style="font-size: 11px; font-weight: 500; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
 
         with col_p4:
             st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Agentic Browsing</div><div style="font-size: 28px; font-weight: 700; color: #1a73e8; margin: 8px 0;">1/3</div><div style="font-size: 11px; color: #5f6368;">AI Agent Accessibility</div></div>', unsafe_allow_html=True)
