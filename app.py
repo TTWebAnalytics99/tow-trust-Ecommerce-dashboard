@@ -54,59 +54,20 @@ authenticate()
 def get_db_connection():
     return psycopg2.connect(DB_URI)
 
-def get_metric_grade(val, good_threshold, poor_threshold, is_lower_better=True):
-    if is_lower_better:
-        if val <= good_threshold:
-            return "A", "Good", "success"
-        elif val <= poor_threshold:
-            return "C", "Needs Improvement", "warning"
-        else:
-            return "F", "Poor", "error"
+def get_psi_grade_color(score):
+    if score >= 90:
+        return "#0cce6b", "#e6f4ea"  # Green
+    elif score >= 50:
+        return "#ffa400", "#fef7e0"  # Orange/Amber
     else:
-        if val >= good_threshold:
-            return "A", "Good", "success"
-        elif val >= poor_threshold:
-            return "C", "Needs Improvement", "warning"
-        else:
-            return "F", "Poor", "error"
-
-def render_gtmetrix_card(title, value, grade, status_text, target_str, status_type):
-    color_map = {
-        'success': {'border': '#28a745', 'bg': '#e6f4ea', 'badge': '#137333'},
-        'warning': {'border': '#f9ab00', 'bg': '#fef7e0', 'badge': '#b06000'},
-        'error': {'border': '#d93025', 'bg': '#fce8e6', 'badge': '#c5221f'}
-    }
-    c = color_map.get(status_type, color_map['success'])
-    
-    return f"""
-    <div style="border: 1px solid #e0e0e0; border-top: 4px solid {c['border']}; background-color: {c['bg']}; padding: 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 13px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.5px;">{title}</span>
-            <span style="background-color: {c['badge']}; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 13px;">Grade {grade}</span>
-        </div>
-        <div style="font-size: 32px; font-weight: 700; color: #111; margin-bottom: 6px;">{value}</div>
-        <div style="font-size: 13px; color: #333; font-weight: 600; margin-bottom: 4px;">{status_text}</div>
-        <div style="font-size: 12px; color: #555; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 6px; margin-top: 4px;">{target_str}</div>
-    </div>
-    """
+        return "#ff4e42", "#fce8e6"  # Red
 
 is_admin = st.session_state.get("role") == "admin"
 tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
 tabs = st.tabs(tab_titles)
 
-# TAB 1: EXECUTIVE BRIEFING
+# TAB 1: EXECUTIVE BRIEFING (PageSpeed Insights Replica)
 with tabs[0]:
-    st.header("📑 Executive Core Web Vitals Briefing")
-    st.caption("Live operational health evaluated against Google Core Web Vitals standards.")
-
-    # Informational box with link to Core Web Vitals definitions
-    st.markdown("""
-    <div style="background-color: #f8f9fa; border-left: 4px solid #1f77b4; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; color: #333;">
-        <strong>Core Web Vitals (CWV) Guide:</strong> These are essential metrics measuring real-world user experience for loading performance, interactivity, and visual stability. 
-        <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1f77b4; text-decoration: none; font-weight: 600;">View official Core Web Vitals definitions &rarr;</a>
-    </div>
-    """, unsafe_allow_html=True)
-
     with get_db_connection() as conn:
         df = pd.read_sql_query("SELECT * FROM web_performance_logs WHERE recorded_at >= NOW() - INTERVAL '30 days' ORDER BY recorded_at ASC;", conn)
 
@@ -114,33 +75,91 @@ with tabs[0]:
         st.info("No performance telemetry recorded yet.")
     else:
         df["recorded_at"] = pd.to_datetime(df["recorded_at"], utc=True)
+        latest_row = df.iloc[-1]
         
-        avg_lcp = (df["lcp_ms"] / 1000.0).mean()
-        avg_tbt = df["tbt_ms"].mean()
-        avg_cls = df["cls"].mean()
-
-        lcp_compliance = (len(df[df["lcp_ms"] <= 2500]) / len(df)) * 100.0 if len(df) > 0 else 0.0
-        tbt_compliance = (len(df[df["tbt_ms"] <= 200]) / len(df)) * 100.0 if len(df) > 0 else 0.0
-        cls_compliance = (len(df[df["cls"] <= 0.10]) / len(df)) * 100.0 if len(df) > 0 else 0.0
-
-        sla_passes = len(df[(df["lcp_ms"] <= 2500) & (df["tbt_ms"] <= 200) & (df["cls"] <= 0.10)])
-        sla_rate = (sla_passes / len(df)) * 100.0 if len(df) > 0 else 0.0
-
-        overall_grade, overall_status, overall_type = get_metric_grade(sla_rate, 90.0, 50.0, is_lower_better=False)
-        lcp_grade, lcp_status, lcp_type = get_metric_grade(avg_lcp, 2.5, 4.0, is_lower_better=True)
-        tbt_grade, tbt_status, tbt_type = get_metric_grade(avg_tbt, 200, 600, is_lower_better=True)
-        cls_grade, cls_status, cls_type = get_metric_grade(avg_cls, 0.10, 0.25, is_lower_better=True)
-
-        c1, c2, c3, c4 = st.columns(4)
+        target_url = latest_row.get("target_url", "https://towtrust.cloudfyuat.com")
+        strategy = latest_row.get("strategy", "mobile")
+        perf_score = int(latest_row.get("perf_score", 0))
         
-        with c1:
-            st.markdown(render_gtmetrix_card("CWV Compliance Rate", f"{sla_rate:.1f}%", overall_grade, overall_status, "KPI Target: ≥ 90% SLA Pass Rate", overall_type), unsafe_allow_html=True)
-        with c2:
-            st.markdown(render_gtmetrix_card("Avg LCP (Visual Speed)", f"{avg_lcp:.2f} s", lcp_grade, lcp_status, f"KPI Target: ≤ 2.5s ({lcp_compliance:.0f}% meeting target)", lcp_type), unsafe_allow_html=True)
-        with c3:
-            st.markdown(render_gtmetrix_card("Avg TBT (Interaction)", f"{avg_tbt:.0f} ms", tbt_grade, tbt_status, f"KPI Target: ≤ 200ms ({tbt_compliance:.0f}% meeting target)", tbt_type), unsafe_allow_html=True)
-        with c4:
-            st.markdown(render_gtmetrix_card("Avg CLS (Stability)", f"{avg_cls:.3f}", cls_grade, cls_status, f"KPI Target: ≤ 0.10 ({cls_compliance:.0f}% meeting target)", cls_type), unsafe_allow_html=True)
+        avg_lcp = latest_row.get("lcp_ms", 0.0) / 1000.0
+        avg_tbt = latest_row.get("tbt_ms", 0.0)
+        avg_cls = latest_row.get("cls", 0.0)
+        avg_ttfb = latest_row.get("ttfb_ms", 0.0)
+        
+        score_color, score_bg = get_psi_grade_color(perf_score)
+        
+        # PSI Top URL Bar Header Container
+        st.markdown(f"""
+        <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);">
+            <div>
+                <span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span>
+                <div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div>
+            </div>
+            <div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">
+                📱 Form Factor: {strategy}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Core Web Vitals Definition Banner
+        st.markdown("""
+        <div style="background-color: #f8f9fa; border-left: 4px solid #1a73e8; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 13px; color: #3c4043;">
+            <strong>Core Web Vitals Assessment:</strong> Google evaluates real-world user experience and lab performance against strict thresholds. 
+            <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; text-decoration: none; font-weight: 500;">Learn more about Core Web Vitals metrics &rarr;</a>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # PSI Score Gauge & Category Section
+        col_gauge, col_metrics = st.columns([1, 2.5])
+        
+        with col_gauge:
+            st.markdown(f"""
+            <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 28px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div style="font-size: 14px; font-weight: 500; color: #5f6368; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div>
+                <div style="width: 110px; height: 110px; border-radius: 50%; border: 8px solid {score_color}; background-color: {score_bg}; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+                    <span style="font-size: 38px; font-weight: 700; color: {score_color};">{perf_score}</span>
+                </div>
+                <div style="font-size: 12px; color: #5f6368;">Scale: 0-49 (Poor) | 50-89 (Average) | 90-100 (Good)</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col_metrics:
+            lcp_color = "#0cce6b" if avg_lcp <= 2.5 else ("#ffa400" if avg_lcp <= 4.0 else "#ff4e42")
+            tbt_color = "#0cce6b" if avg_tbt <= 200 else ("#ffa400" if avg_tbt <= 600 else "#ff4e42")
+            cls_color = "#0cce6b" if avg_cls <= 0.10 else ("#ffa400" if avg_cls <= 0.25 else "#ff4e42")
+            ttfb_color = "#0cce6b" if avg_ttfb <= 800 else ("#ffa400" if avg_ttfb <= 1800 else "#ff4e42")
+
+            st.markdown(f"""
+            <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">Diagnostics & Core Web Vitals Breakdown</div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {lcp_color};">
+                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Largest Contentful Paint (LCP)</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_lcp:.2f} s</div>
+                        <div style="font-size: 11px; color: #5f6368;">Target: ≤ 2.5s (Good)</div>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {tbt_color};">
+                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Total Blocking Time (TBT)</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_tbt:.0f} ms</div>
+                        <div style="font-size: 11px; color: #5f6368;">Target: ≤ 200 ms</div>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {cls_color};">
+                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Cumulative Layout Shift (CLS)</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_cls:.3f}</div>
+                        <div style="font-size: 11px; color: #5f6368;">Target: ≤ 0.10 (Good)</div>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {ttfb_color};">
+                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Server Response Time (TTFB)</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_ttfb:.0f} ms</div>
+                        <div style="font-size: 11px; color: #5f6368;">Target: ≤ 800 ms</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 # TAB 2: URL VITALS
 with tabs[1]:
