@@ -123,7 +123,7 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # INTERACTIVE INSIGHTS USING STREAMLIT EXPANDERS
+        # INTERACTIVE INSIGHTS WITH DYNAMIC FILTERING
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights</div>', unsafe_allow_html=True)
         
         filter_col1, filter_col2 = st.columns([1, 4])
@@ -140,28 +140,70 @@ with tabs[0]:
                 label_visibility="collapsed"
             )
 
-        with st.expander("▲ Render-blocking requests — Est savings of 1,380 ms"):
-            st.write("Items blocking first paint. Consider delivering critical JS/CSS inline and deferring non-critical scripts.")
-        with st.expander("▲ Forced reflow"):
-            st.write("Large layout thrashing detected from synchronous DOM measurements. Optimize style recalculations.")
-        with st.expander("▲ LCP breakdown"):
-            st.write("Time breakdown: TTFB (Server Response) -> Load Delay -> Load Time -> Render Delay.")
-        with st.expander("▲ LCP request discovery"):
-            st.write("The Largest Contentful Paint image or text element was discovered late by the preload scanner.")
-        with st.expander("▲ Network dependency tree"):
-            st.write("Critical chain of requests slowing down initial document download and asset fetching.")
-        with st.expander("■ Use efficient cache lifetimes — Est savings of 83 KiB"):
-            st.write("A longer cache lifetime can speed up repeat visits for returning users.")
-        with st.expander("■ Font display — Est savings of 10 ms"):
-            st.write("Ensure text remains visible during webfont load using `font-display: swap`.")
-        with st.expander("■ Improve image delivery — Est savings of 1,287 KiB"):
-            st.write("Optimize and compress large product/banner images or serve next-gen formats (WebP/AVIF).")
-        with st.expander("■ Legacy JavaScript — Est savings of 7 KiB"):
-            st.write("Polyfills and legacy scripts found for older browsers. Modernize bundle outputs.")
-        with st.expander("● Layout shift culprits"):
-            st.write("Elements changing position dynamically without explicit dimensions set.")
-        with st.expander("● 3rd parties"):
-            st.write("Third-party scripts (chat widgets, analytics, tags) impacting main thread execution.")
+        # Define insights mapped to their relevant categories
+        insights = [
+            {
+                "title": "▲ Render-blocking requests — Est savings of 1,380 ms",
+                "desc": "Items blocking first paint. Consider delivering critical JS/CSS inline and deferring non-critical scripts.",
+                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
+            },
+            {
+                "title": "▲ Forced reflow",
+                "desc": "Large layout thrashing detected from synchronous DOM measurements. Optimize style recalculations.",
+                "relevant_to": ["All", "First Contentful Paint (FCP)", "Cumulative Layout Shift (CLS)"]
+            },
+            {
+                "title": "▲ LCP breakdown",
+                "desc": "Time breakdown: TTFB (Server Response) -> Load Delay -> Load Time -> Render Delay.",
+                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
+            },
+            {
+                "title": "▲ LCP request discovery",
+                "desc": "The Largest Contentful Paint image or text element was discovered late by the preload scanner.",
+                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
+            },
+            {
+                "title": "▲ Network dependency tree",
+                "desc": "Critical chain of requests slowing down initial document download and asset fetching.",
+                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)"]
+            },
+            {
+                "title": "■ Use efficient cache lifetimes — Est savings of 83 KiB",
+                "desc": "A longer cache lifetime can speed up repeat visits for returning users.",
+                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
+            },
+            {
+                "title": "■ Font display — Est savings of 10 ms",
+                "desc": "Ensure text remains visible during webfont load using `font-display: swap`.",
+                "relevant_to": ["All", "First Contentful Paint (FCP)"]
+            },
+            {
+                "title": "■ Improve image delivery — Est savings of 1,287 KiB",
+                "desc": "Optimize and compress large product/banner images or serve next-gen formats (WebP/AVIF).",
+                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
+            },
+            {
+                "title": "■ Legacy JavaScript — Est savings of 7 KiB",
+                "desc": "Polyfills and legacy scripts found for older browsers. Modernize bundle outputs.",
+                "relevant_to": ["All", "Total Blocking Time (TBT)"]
+            },
+            {
+                "title": "● Layout shift culprits",
+                "desc": "Elements changing position dynamically without explicit dimensions set.",
+                "relevant_to": ["All", "Cumulative Layout Shift (CLS)"]
+            },
+            {
+                "title": "● 3rd parties",
+                "desc": "Third-party scripts (chat widgets, analytics, tags) impacting main thread execution.",
+                "relevant_to": ["All", "Total Blocking Time (TBT)"]
+            }
+        ]
+
+        # Render filtered insights
+        for item in insights:
+            if insight_filter in item["relevant_to"]:
+                with st.expander(item["title"]):
+                    st.write(item["desc"])
 
         st.markdown("<br>", unsafe_allow_html=True)
 
