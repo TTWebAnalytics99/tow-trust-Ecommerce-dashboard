@@ -62,6 +62,14 @@ def get_psi_grade_color(score):
     else:
         return "#ff4e42", "#fce8e6"
 
+def render_priority_badge(importance):
+    if importance == 1:
+        return '<span style="background-color: #d93025; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">🔴 Level 1 (Critical Priority)</span>'
+    elif importance == 2:
+        return '<span style="background-color: #f9ab00; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">🟠 Level 2 (Moderate Priority)</span>'
+    else:
+        return '<span style="background-color: #137333; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">🟢 Level 3 (Minor Optimization)</span>'
+
 is_admin = st.session_state.get("role") == "admin"
 tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
 tabs = st.tabs(tab_titles)
@@ -123,7 +131,7 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # INTERACTIVE INSIGHTS WITH DYNAMIC FILTERING & ENHANCED EXECUTIVE METRICS
+        # INTERACTIVE INSIGHTS WITH DYNAMIC FILTERING & TRAFFIC LIGHT RATINGS
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights</div>', unsafe_allow_html=True)
         
         filter_col1, filter_col2 = st.columns([1, 4])
@@ -161,7 +169,6 @@ with tabs[0]:
             },
             {
                 "title": "▲ LCP breakdown",
-                "desc": "Sub-portion latencies: TTFB, Load Delay, Load Time, and Render Delay.",
                 "tech": "Sub-portion latencies: TTFB, Load Delay, Load Time, and Render Delay.",
                 "plain": "Measures exactly where time is lost before the main hero banner or heading image appears to the visitor.",
                 "location": "Hero banner section / Homepage main product imagery and header background assets.",
@@ -246,7 +253,8 @@ with tabs[0]:
         for item in insights:
             if insight_filter in item["relevant_to"]:
                 with st.expander(item["title"]):
-                    st.markdown(f"**Importance Rating:** Level {item['importance']} {'(Highest Priority)' if item['importance'] == 1 else ''}")
+                    badge_html = render_priority_badge(item['importance'])
+                    st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
                     st.markdown(f"**Technical Outcome:** {item.get('tech')}")
                     st.markdown(f"**Plain English Translation:** {item['plain']}")
                     st.markdown(f"**Location / Area on URL:** `{item['location']}`")
@@ -302,7 +310,8 @@ with tabs[0]:
 
         for diag in diagnostics:
             with st.expander(diag["title"]):
-                st.markdown(f"**Importance Rating:** Level {diag['importance']} {'(Highest Priority)' if diag['importance'] == 1 else ''}")
+                badge_html = render_priority_badge(diag['importance'])
+                st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
                 st.markdown(f"**Technical Outcome:** {diag['tech']}")
                 st.markdown(f"**Plain English Translation:** {diag['plain']}")
                 st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
