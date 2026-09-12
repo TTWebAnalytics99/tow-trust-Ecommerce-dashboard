@@ -57,20 +57,20 @@ def get_db_connection():
 def get_metric_grade(val, good_threshold, poor_threshold, is_lower_better=True):
     if is_lower_better:
         if val <= good_threshold:
-            return "A", "🟢 Good", "success"
+            return "A", "Good", "success"
         elif val <= poor_threshold:
-            return "C", "🟠 Needs Improvement", "warning"
+            return "C", "Needs Improvement", "warning"
         else:
-            return "F", "🔴 Poor", "error"
+            return "F", "Poor", "error"
     else:
         if val >= good_threshold:
-            return "A", "🟢 Good", "success"
+            return "A", "Good", "success"
         elif val >= poor_threshold:
-            return "C", "🟠 Needs Improvement", "warning"
+            return "C", "Needs Improvement", "warning"
         else:
-            return "F", "🔴 Poor", "error"
+            return "F", "Poor", "error"
 
-def render_gtmetrix_card(title, value, grade, status_text, compliance_str, status_type):
+def render_gtmetrix_card(title, value, grade, status_text, target_str, status_type):
     color_map = {
         'success': {'border': '#28a745', 'bg': '#e6f4ea', 'badge': '#137333'},
         'warning': {'border': '#f9ab00', 'bg': '#fef7e0', 'badge': '#b06000'},
@@ -85,8 +85,8 @@ def render_gtmetrix_card(title, value, grade, status_text, compliance_str, statu
             <span style="background-color: {c['badge']}; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 13px;">Grade {grade}</span>
         </div>
         <div style="font-size: 32px; font-weight: 700; color: #111; margin-bottom: 6px;">{value}</div>
-        <div style="font-size: 13px; color: #333; font-weight: 600;">{status_text}</div>
-        <div style="font-size: 12px; color: #666; margin-top: 4px;">{compliance_str}</div>
+        <div style="font-size: 13px; color: #333; font-weight: 600; margin-bottom: 4px;">{status_text}</div>
+        <div style="font-size: 12px; color: #555; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 6px; margin-top: 4px;">{target_str}</div>
     </div>
     """
 
@@ -98,6 +98,14 @@ tabs = st.tabs(tab_titles)
 with tabs[0]:
     st.header("📑 Executive Core Web Vitals Briefing")
     st.caption("Live operational health evaluated against Google Core Web Vitals standards.")
+
+    # Informational box with link to Core Web Vitals definitions
+    st.markdown("""
+    <div style="background-color: #f8f9fa; border-left: 4px solid #1f77b4; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; color: #333;">
+        <strong>Core Web Vitals (CWV) Guide:</strong> These are essential metrics measuring real-world user experience for loading performance, interactivity, and visual stability. 
+        <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1f77b4; text-decoration: none; font-weight: 600;">View official Core Web Vitals definitions &rarr;</a>
+    </div>
+    """, unsafe_allow_html=True)
 
     with get_db_connection() as conn:
         df = pd.read_sql_query("SELECT * FROM web_performance_logs WHERE recorded_at >= NOW() - INTERVAL '30 days' ORDER BY recorded_at ASC;", conn)
@@ -126,13 +134,13 @@ with tabs[0]:
         c1, c2, c3, c4 = st.columns(4)
         
         with c1:
-            st.markdown(render_gtmetrix_card("CWV Compliance Rate", f"{sla_rate:.1f}%", overall_grade, overall_status, "Target: ≥ 90% SLA", overall_type), unsafe_allow_html=True)
+            st.markdown(render_gtmetrix_card("CWV Compliance Rate", f"{sla_rate:.1f}%", overall_grade, overall_status, "KPI Target: ≥ 90% SLA Pass Rate", overall_type), unsafe_allow_html=True)
         with c2:
-            st.markdown(render_gtmetrix_card("Avg LCP (Visual Speed)", f"{avg_lcp:.2f} s", lcp_grade, lcp_status, f"{lcp_compliance:.0f}% meeting target", lcp_type), unsafe_allow_html=True)
+            st.markdown(render_gtmetrix_card("Avg LCP (Visual Speed)", f"{avg_lcp:.2f} s", lcp_grade, lcp_status, f"KPI Target: ≤ 2.5s ({lcp_compliance:.0f}% meeting target)", lcp_type), unsafe_allow_html=True)
         with c3:
-            st.markdown(render_gtmetrix_card("Avg TBT (Interaction)", f"{avg_tbt:.0f} ms", tbt_grade, tbt_status, f"{tbt_compliance:.0f}% meeting target", tbt_type), unsafe_allow_html=True)
+            st.markdown(render_gtmetrix_card("Avg TBT (Interaction)", f"{avg_tbt:.0f} ms", tbt_grade, tbt_status, f"KPI Target: ≤ 200ms ({tbt_compliance:.0f}% meeting target)", tbt_type), unsafe_allow_html=True)
         with c4:
-            st.markdown(render_gtmetrix_card("Avg CLS (Stability)", f"{avg_cls:.3f}", cls_grade, cls_status, f"{cls_compliance:.0f}% meeting target", cls_type), unsafe_allow_html=True)
+            st.markdown(render_gtmetrix_card("Avg CLS (Stability)", f"{avg_cls:.3f}", cls_grade, cls_status, f"KPI Target: ≤ 0.10 ({cls_compliance:.0f}% meeting target)", cls_type), unsafe_allow_html=True)
 
 # TAB 2: URL VITALS
 with tabs[1]:
