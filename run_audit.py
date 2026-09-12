@@ -18,12 +18,12 @@ def run_lighthouse_audit():
 
     for url, strategy in targets:
         print(f"Auditing {url} ({strategy})...")
-        api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}"
+        api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}&category=PERFORMANCE"
         
         try:
-            response = requests.get(api_url, timeout=60)
+            response = requests.get(api_url, timeout=90)
             if response.status_code != 200:
-                print(f"API Error for {url}: {response.text}")
+                print(f"API Error for {url} [Status {response.status_code}]: {response.text}")
                 continue
 
             data = response.json()
