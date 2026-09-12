@@ -128,7 +128,17 @@ with tabs[0]:
         
         filter_col1, filter_col2 = st.columns([1, 4])
         with filter_col1:
-            insight_filter = st.selectbox("Show audits relevant to:", ["All", "FCP", "LCP", "TBT", "CLS"], label_visibility="collapsed")
+            insight_filter = st.selectbox(
+                "Show audits relevant to:",
+                [
+                    "All",
+                    "First Contentful Paint (FCP)",
+                    "Largest Contentful Paint (LCP)",
+                    "Total Blocking Time (TBT)",
+                    "Cumulative Layout Shift (CLS)"
+                ],
+                label_visibility="collapsed"
+            )
 
         with st.expander("▲ Render-blocking requests — Est savings of 1,380 ms"):
             st.write("Items blocking first paint. Consider delivering critical JS/CSS inline and deferring non-critical scripts.")
