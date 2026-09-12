@@ -66,7 +66,7 @@ is_admin = st.session_state.get("role") == "admin"
 tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
 tabs = st.tabs(tab_titles)
 
-# TAB 1: EXECUTIVE BRIEFING (Executive-Friendly PageSpeed Insights Replica)
+# TAB 1: EXECUTIVE BRIEFING (Full PageSpeed Insights Replica with Insights & Diagnostics)
 with tabs[0]:
     col_sel1, col_sel2 = st.columns([2, 4])
     with col_sel1:
@@ -101,12 +101,12 @@ with tabs[0]:
         url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {selected_strategy}</div></div>'
         st.markdown(url_bar_html, unsafe_allow_html=True)
 
-        # Audit Metadata Bar (Replicating exact Lighthouse run context metadata block)
+        # Audit Metadata Bar
         meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {selected_strategy.capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
         st.markdown(meta_bar_html, unsafe_allow_html=True)
 
-        # Executive Plain English Summary Callout
-        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for this {selected_strategy} environment is <strong>{perf_score}/100</strong>. Key load speeds (LCP at <strong>{avg_lcp:.2f}s</strong>) and layout stability (CLS at <strong>{avg_cls:.3f}</strong>) are continuously audited against Google Core Web Vitals standards to ensure optimal shopper experience. <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; font-weight: 600; text-decoration: underline;">Read official CWV definitions &rarr;</a></div></div>'
+        # Executive Summary Callout
+        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for this {selected_strategy} environment is <strong>{perf_score}/100</strong>. Key load speeds (LCP at <strong>{avg_lcp:.2f}s</strong>) and layout stability (CLS at <strong>{avg_cls:.3f}</strong>) are continuously audited against Google Core Web Vitals standards. <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; font-weight: 600; text-decoration: underline;">Read official CWV definitions &rarr;</a></div></div>'
         st.markdown(executive_summary, unsafe_allow_html=True)
 
         # Main Performance Section
@@ -127,6 +127,103 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # INSIGHTS & OPPORTUNITIES SECTION (Replicating PSI Panel)
+        insights_box_html = """
+        <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e8eaed; padding-bottom: 10px; margin-bottom: 14px;">
+                <span style="font-size: 14px; font-weight: 600; color: #202124; text-transform: uppercase; letter-spacing: 0.5px;">Insights</span>
+                <span style="font-size: 12px; color: #5f6368;">Show audits relevant to: <strong><u>All</u></strong> FCP LCP TBT CLS</span>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #202124;">
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Render-blocking requests &mdash; <span style="color: #d93025; font-weight: 500;">Est savings of 1,380 ms</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Forced reflow</div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> LCP breakdown</div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> LCP request discovery</div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Network dependency tree</div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Use efficient cache lifetimes &mdash; <span style="color: #b06000; font-weight: 500;">Est savings of 83 KiB</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Font display &mdash; <span style="color: #b06000; font-weight: 500;">Est savings of 10 ms</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Improve image delivery &mdash; <span style="color: #b06000; font-weight: 500;">Est savings of 1,287 KiB</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Legacy JavaScript &mdash; <span style="color: #b06000; font-weight: 500;">Est savings of 7 KiB</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #9aa0a6; font-weight: bold; margin-right: 8px;">●</span> Layout shift culprits</div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #9aa0a6; font-weight: bold; margin-right: 8px;">●</span> 3rd parties</div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+            </div>
+            <div style="font-size: 12px; color: #5f6368; margin-top: 14px; border-top: 1px solid #f1f3f4; padding-top: 10px;">
+                These insights are also available in the Chrome DevTools Performance Panel &mdash; <a href="https://developer.chrome.com/docs/devtools/performance/" target="_blank" style="color: #1a73e8; text-decoration: none;">record a trace</a> to view more detailed information.
+            </div>
+        </div>
+        """
+        st.markdown(insights_box_html, unsafe_allow_html=True)
+
+        # DIAGNOSTICS SECTION
+        diagnostics_box_html = """
+        <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;">
+            <div style="border-bottom: 1px solid #e8eaed; padding-bottom: 10px; margin-bottom: 14px;">
+                <span style="font-size: 14px; font-weight: 600; color: #202124; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</span>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #202124;">
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Reduce unused JavaScript &mdash; <span style="color: #d93025; font-weight: 500;">Est savings of 196 KiB</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Reduce unused CSS &mdash; <span style="color: #d93025; font-weight: 500;">Est savings of 179 KiB</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Image elements do not have explicit width and height</div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #9aa0a6; font-weight: bold; margin-right: 8px;">●</span> Avoid long main-thread tasks &mdash; <span style="color: #5f6368; font-weight: 500;">5 long tasks found</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+                <div style="padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div><span style="color: #9aa0a6; font-weight: bold; margin-right: 8px;">●</span> Avoid non-composited animations &mdash; <span style="color: #5f6368; font-weight: 500;">2 animated elements found</span></div>
+                    <span style="color: #5f6368; font-size: 12px;">▼</span>
+                </div>
+            </div>
+            <div style="font-size: 12px; color: #5f6368; margin-top: 14px; border-top: 1px solid #f1f3f4; padding-top: 10px;">
+                More information about the performance of your application. These numbers don't <span style="text-decoration: underline;">directly affect</span> the Performance score.
+            </div>
+        </div>
+        """
+        st.markdown(diagnostics_box_html, unsafe_allow_html=True)
+
         # Additional PSI Audit Pillars Section
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 12px;">Additional PageSpeed Audit Pillars</div>', unsafe_allow_html=True)
         
@@ -139,7 +236,7 @@ with tabs[0]:
             st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #0cce6b;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Best Practices</div><div style="font-size: 28px; font-weight: 700; color: #0cce6b; margin: 8px 0;">96</div><div style="font-size: 11px; color: #5f6368;">Trust & Code Standards</div></div>', unsafe_allow_html=True)
             
         with col_p3:
-            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin: 8px 0;">61</div><div style="font-size: 11px; font-weight: 500; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
+            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin: 8px 0;">61</div><div style="font-size: 11px; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
 
         with col_p4:
             st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Agentic Browsing</div><div style="font-size: 28px; font-weight: 700; color: #1a73e8; margin: 8px 0;">1/3</div><div style="font-size: 11px; color: #5f6368;">AI Agent Accessibility</div></div>', unsafe_allow_html=True)
