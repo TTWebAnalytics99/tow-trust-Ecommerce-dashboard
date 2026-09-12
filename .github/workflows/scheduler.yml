@@ -2,9 +2,9 @@ name: CWV Automated Audit Scheduler
 
 on:
   schedule:
-    # Runs every 6 hours automatically
-    - cron: '0 */6 * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+    # Runs every 2 hours automatically
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
 
 jobs:
   run-audits:
