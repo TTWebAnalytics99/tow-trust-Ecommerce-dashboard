@@ -54,6 +54,22 @@ authenticate()
 def get_db_connection():
     return psycopg2.connect(DB_URI)
 
+def get_metric_grade(val, good_threshold, poor_threshold, is_lower_better=True):
+    if is_lower_better:
+        if val <= good_threshold:
+            return "A", "🟢 Good"
+        elif val <= poor_threshold:
+            return "C", "🟠 Needs Improvement"
+        else:
+            return "F", "🔴 Poor"
+    else:
+        if val >= good_threshold:
+            return "A", "🟢 Good"
+        elif val >= poor_threshold:
+            return "C", "🟠 Needs Improvement"
+        else:
+            return "F", "🔴 Poor"
+
 is_admin = st.session_state.get("role") == "admin"
 
 if is_admin:
@@ -79,14 +95,24 @@ with tabs[0]:
         avg_lcp = (df["lcp_ms"] / 1000.0).mean()
         avg_tbt = df["tbt_ms"].mean()
         avg_cls = df["cls"].mean()
+
+        lcp_compliance = (len(df[df["lcp_ms"] <= 2500]) / len(df)) * 100.0 if len(df) > 0 else 0.0
+        tbt_compliance = (len(df[df["tbt_ms"] <= 200]) / len(df)) * 100.0 if len(df) > 0 else 0.0
+        cls_compliance = (len(df[df["cls"] <= 0.10]) / len(df)) * 100.0 if len(df) > 0 else 0.0
+
         sla_passes = len(df[(df["lcp_ms"] <= 2500) & (df["tbt_ms"] <= 200) & (df["cls"] <= 0.10)])
         sla_rate = (sla_passes / len(df)) * 100.0 if len(df) > 0 else 0.0
 
+        lcp_grade, lcp_status = get_metric_grade(avg_lcp, 2.5, 4.0, is_lower_better=True)
+        tbt_grade, tbt_status = get_metric_grade(avg_tbt, 200, 600, is_lower_better=True)
+        cls_grade, cls_status = get_metric_grade(avg_cls, 0.10, 0.25, is_lower_better=True)
+        overall_grade, overall_status = get_metric_grade(sla_rate, 90.0, 50.0, is_lower_better=False)
+
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("CWV Compliance Rate", f"{sla_rate:.1f}%", "Target: ≥ 90%")
-        c2.metric("Avg LCP (Visual Speed)", f"{avg_lcp:.2f} s", "Target: ≤ 2.5s")
-        c3.metric("Avg TBT (Interaction Delay)", f"{avg_tbt:.0f} ms", "Target: ≤ 200ms")
-        c4.metric("Avg CLS (Stability)", f"{avg_cls:.3f}", "Target: ≤ 0.10")
+        c1.metric("CWV Compliance Rate", f"{sla_rate:.1f}%", f"{overall_status} (Grade {overall_grade})")
+        c2.metric("Avg LCP (Visual Speed)", f"{avg_lcp:.2f} s", f"{lcp_status} (Grade {lcp_grade} | {lcp_compliance:.0f}% pass)")
+        c3.metric("Avg TBT (Interaction Delay)", f"{avg_tbt:.0f} ms", f"{tbt_status} (Grade {tbt_grade} | {tbt_compliance:.0f}% pass)")
+        c4.metric("Avg CLS (Stability)", f"{avg_cls:.3f}", f"{cls_status} (Grade {cls_grade} | {cls_compliance:.0f}% pass)")
 
 # TAB 2: URL VITALS
 with tabs[1]:
