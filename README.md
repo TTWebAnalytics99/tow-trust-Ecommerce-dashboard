@@ -38,7 +38,3 @@ Dashboard Features (app.py)
 Office Kiosk Integration (index.html)
 
 To bypass cloud security restrictions (X-Frame-Options) that block external <iframe> embedding on office display hardware, the system uses a lightweight client-side JavaScript redirect wrapper (index.html) targeting read-only kiosk mode (?mode=kiosk).
-
-    🎨 Asset Bottlenecks: Highlights unoptimized image waste, unused CSS payloads, and third-party main thread drag.
-
-    ⚡ Ad-Hoc Tester (Admin Only): On-demand Lighthouse audit runner for immediate diagnostics.
