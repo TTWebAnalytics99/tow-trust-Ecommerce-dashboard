@@ -123,13 +123,54 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # INSIGHTS SECTION (Flattened to single line)
-        insights_box_html = '<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e8eaed; padding-bottom: 10px; margin-bottom: 14px;"><span style="font-size: 14px; font-weight: 600; color: #202124; text-transform: uppercase; letter-spacing: 0.5px;">Insights</span><span style="font-size: 12px; color: #5f6368;">Show audits relevant to: <strong><u>All</u></strong> FCP LCP TBT CLS</span></div><div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #202124;"><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Render-blocking requests &mdash; <span style="color: #d93025; font-weight: 500;">Est savings of 1,380 ms</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Forced reflow</div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> LCP breakdown</div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> LCP request discovery</div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Network dependency tree</div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Use efficient cache lifetimes &mdash; <span style="color: #b06000; font-weight: 500;">Est savings of 83 KiB</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Font display &mdash; <span style="color: #b06000; font-weight: 500;">Est savings of 10 ms</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Improve image delivery &mdash; <span style="color: #b06000; font-weight: 500;">Est savings of 1,287 KiB</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Legacy JavaScript &mdash; <span style="color: #b06000; font-weight: 500;">Est savings of 7 KiB</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #9aa0a6; font-weight: bold; margin-right: 8px;">●</span> Layout shift culprits</div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #9aa0a6; font-weight: bold; margin-right: 8px;">●</span> 3rd parties</div><span style="color: #5f6368; font-size: 12px;">▼</span></div></div><div style="font-size: 12px; color: #5f6368; margin-top: 14px; border-top: 1px solid #f1f3f4; padding-top: 10px;">These insights are also available in the Chrome DevTools Performance Panel &mdash; <a href="https://developer.chrome.com/docs/devtools/performance/" target="_blank" style="color: #1a73e8; text-decoration: none;">record a trace</a> to view more detailed information.</div></div>'
-        st.markdown(insights_box_html, unsafe_allow_html=True)
+        # INTERACTIVE INSIGHTS USING STREAMLIT EXPANDERS
+        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights</div>', unsafe_allow_html=True)
+        
+        filter_col1, filter_col2 = st.columns([1, 4])
+        with filter_col1:
+            insight_filter = st.selectbox("Show audits relevant to:", ["All", "FCP", "LCP", "TBT", "CLS"], label_visibility="collapsed")
 
-        # DIAGNOSTICS SECTION (Flattened to single line)
-        diagnostics_box_html = '<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;"><div style="border-bottom: 1px solid #e8eaed; padding-bottom: 10px; margin-bottom: 14px;"><span style="font-size: 14px; font-weight: 600; color: #202124; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</span></div><div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #202124;"><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Reduce unused JavaScript &mdash; <span style="color: #d93025; font-weight: 500;">Est savings of 196 KiB</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #d93025; font-weight: bold; margin-right: 8px;">▲</span> Reduce unused CSS &mdash; <span style="color: #d93025; font-weight: 500;">Est savings of 179 KiB</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #f9ab00; font-weight: bold; margin-right: 8px;">■</span> Image elements do not have explicit width and height</div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #9aa0a6; font-weight: bold; margin-right: 8px;">●</span> Avoid long main-thread tasks &mdash; <span style="color: #5f6368; font-weight: 500;">5 long tasks found</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div><div style="padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;"><div><span style="color: #9aa0a6; font-weight: bold; margin-right: 8px;">●</span> Avoid non-composited animations &mdash; <span style="color: #5f6368; font-weight: 500;">2 animated elements found</span></div><span style="color: #5f6368; font-size: 12px;">▼</span></div></div><div style="font-size: 12px; color: #5f6368; margin-top: 14px; border-top: 1px solid #f1f3f4; padding-top: 10px;">More information about the performance of your application. These numbers don\'t <span style="text-decoration: underline;">directly affect</span> the Performance score.</div></div>'
-        st.markdown(diagnostics_box_html, unsafe_allow_html=True)
+        # Functional Expanders for Insights
+        with st.expander("▲ Render-blocking requests — Est savings of 1,380 ms"):
+            st.write("Items blocking first paint. Consider delivering critical JS/CSS inline and deferring non-critical scripts.")
+        with st.expander("▲ Forced reflow"):
+            st.write("Large layout thrashing detected from synchronous DOM measurements. Optimize style recalculations.")
+        with st.expander("▲ LCP breakdown"):
+            st.write("Time breakdown: TTFB (Server Response) -> Load Delay -> Load Time -> Render Delay.")
+        with st.expander("▲ LCP request discovery"):
+            st.write("The Largest Contentful Paint image or text element was discovered late by the preload scanner.")
+        with st.expander("▲ Network dependency tree"):
+            st.write("Critical chain of requests slowing down initial document download and asset fetching.")
+        with st.expander("■ Use efficient cache lifetimes — Est savings of 83 KiB"):
+            st.write("A longer cache lifetime can speed up repeat visits for returning users.")
+        with st.expander("■ Font display — Est savings of 10 ms"):
+            st.write("Ensure text remains visible during webfont load using `font-display: swap`.")
+        with st.expander("■ Improve image delivery — Est savings of 1,287 KiB"):
+            st.write("Optimize and compress large product/banner images or serve next-gen formats (WebP/AVIF).")
+        with st.expander("■ Legacy JavaScript — Est savings of 7 KiB"):
+            st.write("Polyfills and legacy scripts found for older browsers. Modernize bundle outputs.")
+        with st.expander("● Layout shift culprits"):
+            st.write("Elements changing position dynamically without explicit dimensions set.")
+        with st.expander("● 3rd parties"):
+            st.write("Third-party scripts (chat widgets, analytics, tags) impacting main thread execution.")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # FUNCTIONAL DIAGNOSTICS SECTION USING STREAMLIT EXPANDERS
+        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</div>', unsafe_allow_html=True)
+        
+        with st.expander("▲ Reduce unused JavaScript — Est savings of 196 KiB"):
+            st.write("Remove unused JavaScript from bundles to reduce network bytes consumed during script loading.")
+        with st.expander("▲ Reduce unused CSS — Est savings of 179 KiB"):
+            st.write("Reduce unused rules from stylesheets and defer CSS not used above the fold.")
+        with st.expander("■ Image elements do not have explicit width and height"):
+            st.write("Add explicit `width` and `height` dimension attributes on image elements to reduce cumulative layout shifts.")
+        with st.expander("● Avoid long main-thread tasks — 5 long tasks found"):
+            st.write("Consider breaking up long execution tasks (>50ms) to improve responsiveness.")
+        with st.expander("● Avoid non-composited animations — 2 animated elements found"):
+            st.write("Animated properties that are not composited can be janky and take up main thread time.")
+
+        st.markdown("<br>", unsafe_allow_html=True)
 
         # Additional PSI Audit Pillars Section
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 12px;">Additional PageSpeed Audit Pillars</div>', unsafe_allow_html=True)
@@ -143,10 +184,10 @@ with tabs[0]:
             st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #0cce6b;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Best Practices</div><div style="font-size: 28px; font-weight: 700; color: #0cce6b; margin: 8px 0;">96</div><div style="font-size: 11px; color: #5f6368;">Trust & Code Standards</div></div>', unsafe_allow_html=True)
             
         with col_p3:
-            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin: 8px 0;">61</div><div style="font-size: 11px; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
+            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin-top: 8px; margin-bottom: 8px;">61</div><div style="font-size: 11px; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
 
         with col_p4:
-            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Agentic Browsing</div><div style="font-size: 28px; font-weight: 700; color: #1a73e8; margin: 8px 0;">1/3</div><div style="font-size: 11px; color: #5f6368;">AI Agent Accessibility</div></div>', unsafe_allow_html=True)
+            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Agentic Browsing</div><div style="font-size: 28px; font-weight: 700; color: #1a73e8; margin-top: 8px; margin-bottom: 8px;">1/3</div><div style="font-size: 11px; color: #5f6368;">AI Agent Accessibility</div></div>', unsafe_allow_html=True)
 
 # TAB 2: URL VITALS
 with tabs[1]:
