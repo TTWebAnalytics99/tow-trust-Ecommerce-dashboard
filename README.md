@@ -1,6 +1,6 @@
-# Tow-Trust Core Web Vitals Monitoring Facility
+# Sandbox Tow-Trust Core Web Vitals Monitoring Facility
 
-A streamlined, production-grade telemetry and diagnostics system designed to monitor Google Core Web Vitals (CWV) for automotive e-commerce platforms, optimized for real-time executive reporting and dedicated office display kiosk hardware.
+Test and Dev version of a streamlined, production-grade telemetry and diagnostics system designed to monitor Google Core Web Vitals (CWV) for automotive e-commerce platforms, optimized for real-time executive reporting and dedicated office display kiosk hardware.
 Technical Stack
 
     Frontend UI: Python, Streamlit (Role-aware: Admin & Read-Only Kiosk tiers)
