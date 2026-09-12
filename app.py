@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-st.set_page_config(page_title="SANDBOX TT SWPTA", layout="wide")
+st.set_page_config(page_title="TT SWPTA", layout="wide")
 
 DB_URI = st.secrets.get("DATABASE_URL") or os.getenv("DATABASE_URL")
 API_KEY = st.secrets.get("PAGESPEED_API_KEY") or os.getenv("PAGESPEED_API_KEY", "")
@@ -35,7 +35,7 @@ def authenticate():
             st.session_state["auth_ok"] = False
 
     if not st.session_state.get("auth_ok", False):
-        st.subheader("🔒 SANDBOX Tow-Trust ECommerce Web Performance and Synthetic Testing Application")
+        st.subheader("🔒 Tow-Trust ECommerce Web Performance and Synthetic Testing Application")
         st.text_input("Enter Passkey", type="password", key="pass_input", on_change=check)
         if st.session_state.get("auth_ok") is False:
             st.error("Invalid credentials.")
