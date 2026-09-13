@@ -5,6 +5,35 @@ import psycopg2
 DB_URI = os.getenv("DATABASE_URL")
 API_KEY = os.getenv("PAGESPEED_API_KEY")
 
+def send_teams_alert(target_url, strategy, perf_score, lcp_ms):
+    webhook_url = os.getenv("TEAMS_WEBHOOK_URL")
+    if not webhook_url:
+        return
+
+    # ISO 9001 quality threshold rules
+    if perf_score < 50 or lcp_ms > 4000:
+        payload = {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions",
+            "summary": "Performance Threshold Breach",
+            "themeColor": "D93025",
+            "title": "🚨 ISO 9001 Quality Alert: Performance Breach",
+            "sections": [{
+                "facts": [
+                    {"name": "Target URL:", "value": target_url},
+                    {"name": "Form Factor:", "value": strategy.capitalize()},
+                    {"name": "Performance Score:", "value": f"{perf_score}/100"},
+                    {"name": "LCP:", "value": f"{lcp_ms:.0f} ms"}
+                ],
+                "text": "The monitored environment has breached acceptable quality thresholds. Corrective action review required."
+            }]
+        }
+        try:
+            requests.post(webhook_url, json=payload, timeout=10)
+            print("Teams alert dispatched successfully.")
+        except Exception as e:
+            print(f"Failed to send Teams alert: {e}")
+
 def run_lighthouse_audit():
     if not DB_URI or not API_KEY:
         print("Missing DATABASE_URL or PAGESPEED_API_KEY.")
@@ -68,6 +97,9 @@ def run_lighthouse_audit():
                   lcp_ms, tbt_ms, cls, ttfb_ms, unoptimized_images_kb, unused_css_kb, unused_js_kb, third_party_ms))
             conn.commit()
             print(f"Successfully logged metrics for {url}")
+
+            # Trigger ISO compliance threshold check and alert Microsoft Teams if breached
+            send_teams_alert(url, strategy, perf_score, lcp_ms)
 
         except Exception as e:
             print(f"Failed processing {url}: {e}")
