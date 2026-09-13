@@ -112,7 +112,6 @@ with tabs[0]:
         if df_url.empty:
             df_url = df[df["target_url"] == selected_url]
 
-        # Grab the absolute latest audit record for this URL
         latest_row = df_url.iloc[-1] if not df_url.empty else df.iloc[-1]
         
         target_url = latest_row.get("target_url", selected_url)
@@ -307,32 +306,6 @@ with tabs[0]:
                 st.markdown(f"**Plain English Translation:** {diag['plain']}")
                 st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
                 st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # Pull dynamic pillar scores safely from latest_row
-        acc_score = int(latest_row.get("accessibility_score", 0) or 0)
-        bp_score = int(latest_row.get("best_practices_score", 0) or 0)
-        seo_score = int(latest_row.get("seo_score", 0) or 0)
-        
-        agentic_rating = f"{min(3, max(1, int(perf_score / 35 + 1)))}/3"
-
-        # Additional PSI Audit Pillars Section
-        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 12px;">Additional PageSpeed Audit Pillars</div>', unsafe_allow_html=True)
-        
-        col_p1, col_p2, col_p3, col_p4 = st.columns(4)
-        
-        with col_p1:
-            st.markdown(f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Accessibility</div><div style="font-size: 28px; font-weight: 700; color: #1a73e8; margin: 8px 0;">{acc_score}</div><div style="font-size: 11px; color: #5f6368;">Labels & Contrast Checks</div></div>', unsafe_allow_html=True)
-            
-        with col_p2:
-            st.markdown(f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #0cce6b;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Best Practices</div><div style="font-size: 28px; font-weight: 700; color: #0cce6b; margin: 8px 0;">{bp_score}</div><div style="font-size: 11px; color: #5f6368;">Trust & Code Standards</div></div>', unsafe_allow_html=True)
-            
-        with col_p3:
-            st.markdown(f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 16px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin-top: 8px; margin-bottom: 8px;">{seo_score}</div><div style="font-size: 11px; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
-
-        with col_p4:
-            st.markdown(f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 700; color: #1a73e8; margin-top: 8px; margin-bottom: 8px;">{agentic_rating}</div><div style="font-size: 11px; color: #5f6368;">Agentic Browsing</div></div>', unsafe_allow_html=True)
 
 # TAB 2: URL VITALS
 with tabs[1]:
