@@ -27,7 +27,7 @@ def run_lighthouse_audit():
     for url, strategy in targets:
         print(f"Auditing {url} ({strategy})...")
         # Request all required category pillars from the PageSpeed Insights API
-      api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}&category=PERFORMANCE&category=ACCESSIBILITY&category=BEST_PRACTICES&category=SEO"
+        api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}&category=PERFORMANCE&category=ACCESSIBILITY&category=BEST_PRACTICES&category=SEO"
         
         try:
             response = requests.get(api_url, timeout=90)
@@ -40,10 +40,16 @@ def run_lighthouse_audit():
             audits = lh.get("audits", {})
             categories = lh.get("categories", {})
 
-            perf_score = int((categories.get("performance", {}).get("score", 0) or 0) * 100)
-            accessibility_score = int((categories.get("accessibility", {}).get("score", 0) or 0) * 100)
-            best_practices_score = int((categories.get("best-practices", {}).get("score", 0) or 0) * 100)
-            seo_score = int((categories.get("seo", {}).get("score", 0) or 0) * 100)
+            # Safely extract score floats (0.0 to 1.0) and scale to 100 integer format
+            perf_raw = categories.get("performance", {}).get("score")
+            acc_raw = categories.get("accessibility", {}).get("score")
+            bp_raw = categories.get("best-practices", {}).get("score")
+            seo_raw = categories.get("seo", {}).get("score")
+
+            perf_score = int(perf_raw * 100) if perf_raw is not None else 0
+            accessibility_score = int(acc_raw * 100) if acc_raw is not None else 0
+            best_practices_score = int(bp_raw * 100) if bp_raw is not None else 0
+            seo_score = int(seo_raw * 100) if seo_raw is not None else 0
 
             lcp_ms = audits.get("largest-contentful-paint", {}).get("numericValue", 0.0)
             tbt_ms = audits.get("total-blocking-time", {}).get("numericValue", 0.0)
