@@ -395,7 +395,6 @@ with tabs[1]:
     with get_db_connection() as conn:
         df = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at ASC;", conn)
 
-    .strip()
     if not df.empty:
         sel_url = st.selectbox("Select Target URL", df["target_url"].unique())
         filt = df[df["target_url"] == sel_url]
