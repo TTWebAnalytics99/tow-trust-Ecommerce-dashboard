@@ -120,7 +120,6 @@ with tabs[0]:
         score_color, score_bg = get_psi_grade_color(perf_score)
         current_letter = get_gtmetrix_letter_grade(perf_score)
         
-        # Estimated score if all Level 1 and 2 issues are fixed (capped at 98)
         estimated_optimized_score = min(98, perf_score + 32)
         estimated_letter = get_gtmetrix_letter_grade(estimated_optimized_score)
         est_color, est_bg = get_psi_grade_color(estimated_optimized_score)
@@ -156,7 +155,14 @@ with tabs[0]:
                         </div>
                     </div>
                 </div>
-                <div style="font-size: 11px; color: #5f6368; border-top: 1px solid #e8eaed; padding-top: 8px; width: 100%;">Estimated score if all Level 1 & 2 fixes are resolved.</div>
+                <div style="font-size: 11px; color: #5f6368; border-top: 1px solid #e8eaed; padding-top: 8px; width: 100%; margin-bottom: 10px;">Estimated score if all Level 1 & 2 fixes are resolved.</div>
+                
+                <!-- Google Lighthouse Score Weightings Legend -->
+                <div style="display: flex; justify-content: space-around; width: 100%; font-size: 11px; color: #5f6368; border-top: 1px dashed #dadce0; padding-top: 8px;">
+                    <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #ff4e42; font-weight: bold;">▲</span> <span>0–49</span></div>
+                    <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #ffa400; font-weight: bold;">■</span> <span>50–89</span></div>
+                    <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #0cce6b; font-weight: bold;">●</span> <span>90–100</span></div>
+                </div>
             </div>
             '''
             st.markdown(gauge_html, unsafe_allow_html=True)
@@ -389,10 +395,11 @@ with tabs[1]:
     with get_db_connection() as conn:
         df = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at ASC;", conn)
 
+    .strip()
     if not df.empty:
         sel_url = st.selectbox("Select Target URL", df["target_url"].unique())
         filt = df[df["target_url"] == sel_url]
-        fig = px.line(filt, x="recorded_at", y=["lcp_ms", "tbt_ms", "ttfb_ms"], title="Latency Evolution (ms grading)")
+        fig = px.line(filt, x="recorded_at", y=["lcp_ms", "tbt_ms", "ttfb_ms"], title="Latency Evolution (ms)")
         st.plotly_chart(fig, use_container_width=True)
 
 # TAB 3: ASSET BOTTLENECKS
