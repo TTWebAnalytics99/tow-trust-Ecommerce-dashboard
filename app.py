@@ -95,27 +95,32 @@ with tabs[0]:
         selected_strategy = st.radio("Select Form Factor", ["mobile", "desktop"], horizontal=True)
 
     with get_db_connection() as conn:
-        df = pd.read_sql_query("SELECT * FROM web_performance_logs WHERE recorded_at >= NOW() - INTERVAL '30 days' ORDER BY recorded_at ASC;", conn)
+        df = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at ASC;", conn)
 
     if df.empty:
         st.info("No performance telemetry recorded yet.")
     else:
         df["recorded_at"] = pd.to_datetime(df["recorded_at"], utc=True)
         
-        df_strat = df[df["strategy"] == selected_strategy]
-        if df_strat.empty:
-            df_strat = df  
+        # Dynamically populate available URLs from DB so each server/environment can be selected or auto-detected
+        available_urls = df["target_url"].unique().tolist()
+        selected_url = st.selectbox("Select Environment URL", available_urls)
 
-        latest_row = df_strat.iloc[-1]
+        df_url = df[df["target_url"] == selected_url]
+        df_strat = df_url[df_url["strategy"] == selected_strategy]
+        if df_strat.empty:
+            df_strat = df_url  
+
+        latest_row = df_strat.iloc[-1] if not df_strat.empty else df.iloc[-1]
         
-        target_url = latest_row.get("target_url", "https://towtrust.cloudfyuat.com")
+        target_url = latest_row.get("target_url", selected_url)
         perf_score = int(latest_row.get("perf_score", 0))
-        recorded_time = latest_row.get("recorded_at").strftime("%b %d, %Y, %I:%M %p GMT%z") if pd.notnull(latest_row.get("recorded_at")) else "Sep 12, 2026, 11:41 PM GMT+1"
+        recorded_time = latest_row.get("recorded_at").strftime("%b %d, %Y, %I:%M %p GMT%z") if pd.notnull(latest_row.get("recorded_at")) else "Recent Audit"
         
-        avg_lcp = latest_row.get("lcp_ms", 0.0) / 1000.0
-        avg_tbt = latest_row.get("tbt_ms", 0.0)
-        avg_cls = latest_row.get("cls", 0.0)
-        avg_ttfb = latest_row.get("ttfb_ms", 0.0)
+        avg_lcp = float(latest_row.get("lcp_ms", 0.0)) / 1000.0
+        avg_tbt = float(latest_row.get("tbt_ms", 0.0))
+        avg_cls = float(latest_row.get("cls", 0.0))
+        avg_ttfb = float(latest_row.get("ttfb_ms", 0.0))
         
         score_color, score_bg = get_psi_grade_color(perf_score)
         current_letter = get_gtmetrix_letter_grade(perf_score)
@@ -130,7 +135,7 @@ with tabs[0]:
         meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {selected_strategy.capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
         st.markdown(meta_bar_html, unsafe_allow_html=True)
 
-        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for this {selected_strategy} environment is <strong>{perf_score}/100 (Grade {current_letter})</strong>. Addressing all Level 1 and Level 2 priority insights is projected to lift performance to an estimated <strong>{estimated_optimized_score}/100 (Grade {estimated_letter})</strong>. <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; font-weight: 600; text-decoration: underline;">Read official CWV definitions &rarr;</a></div></div>'
+        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for this environment (<code>{target_url}</code>) is <strong>{perf_score}/100 (Grade {current_letter})</strong>. Addressing all Level 1 and Level 2 priority insights is projected to lift performance to an estimated <strong>{estimated_optimized_score}/100 (Grade {estimated_letter})</strong>.</div></div>'
         st.markdown(executive_summary, unsafe_allow_html=True)
 
         col_gauge, col_metrics = st.columns([1, 2.5])
@@ -150,7 +155,7 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # INTERACTIVE INSIGHTS SORTED BY IMPORTANCE (1 -> 2 -> 3) WITH TRAFFIC LIGHTS IN TITLE
+        # DYNAMIC INSIGHTS GENERATOR BASED ON ACTUAL SERVER METRICS
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights</div>', unsafe_allow_html=True)
         
         filter_col1, filter_col2 = st.columns([1, 4])
@@ -167,166 +172,92 @@ with tabs[0]:
                 label_visibility="collapsed"
             )
 
-        insights = [
-            {
-                "title": "Render-blocking requests — Est savings of 1,380 ms",
-                "tech": "Scripts and stylesheets in `<head>` block document parsing before initial render.",
-                "plain": "External plugins or tracking scripts are forcing the browser to wait before showing any content on the screen.",
-                "location": "Header section (`<head>`) / Global stylesheets and third-party tracking scripts loaded in main layout template.",
-                "cwv_impact": "Directly improves First Contentful Paint (FCP) and Largest Contentful Paint (LCP), boosting overall CWV pass rate significantly.",
-                "importance": 1,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
-            },
-            {
-                "title": "Forced reflow",
-                "tech": "Synchronous DOM measurements triggered style recalculations during layout stages.",
-                "plain": "JavaScript code is asking the browser for element dimensions immediately after modifying styles, causing layout recalculation loops.",
-                "location": "Interactive UI components / Dropdown menu scripts and responsive grid calculation handlers (`main.js`).",
-                "cwv_impact": "Reduces main-thread CPU congestion and prevents layout instability, protecting Cumulative Layout Shift (CLS).",
-                "importance": 2,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Cumulative Layout Shift (CLS)"]
-            },
-            {
-                "title": "LCP breakdown",
-                "tech": "Sub-portion latencies: TTFB, Load Delay, Load Time, and Render Delay.",
-                "plain": "Measures exactly where time is lost before the main hero banner or heading image appears to the visitor.",
-                "location": "Hero banner section / Homepage main product imagery and header background assets.",
-                "cwv_impact": "Accelerates Largest Contentful Paint (LCP) delivery by pinpointing server response bottlenecks.",
-                "importance": 1,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "LCP request discovery",
-                "tech": "The primary LCP image/text element was discovered late due to inline styling or deferred HTML structure.",
-                "plain": "The browser didn't start downloading the main page banner until late in the page loading process because it was hidden inside external CSS or JS.",
-                "location": "Above-the-fold hero container / Homepage banner image element (`<img>` tag without preload hints).",
-                "cwv_impact": "Ensures the main hero image loads immediately, directly securing a 'Good' Largest Contentful Paint (LCP) score.",
-                "importance": 1,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "Network dependency tree",
-                "tech": "Critical request chains delaying downstream asset fetching and execution.",
-                "plain": "A long sequence of dependent files blocks the browser from downloading critical page elements efficiently.",
-                "location": "Resource loading pipeline / Root HTML document referencing dependent CSS bundles and web font stylesheets.",
-                "cwv_impact": "Shortens the critical rendering path, improving both First Contentful Paint (FCP) and overall compliance.",
-                "importance": 2,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "Use efficient cache lifetimes — Est savings of 83 KiB",
-                "tech": "Static assets served with short or missing Cache-Control HTTP headers.",
-                "plain": "Returning shoppers' browsers are forced to re-download static images and logo files on every page visit instead of saving them locally.",
-                "location": "Static asset server configuration / Media storage bucket & Nginx/Cloudflare caching rule headers (`/static/` and `/media/`).",
-                "cwv_impact": "Reduces repeat network overhead and speeds up subsequent page loads for returning users.",
-                "importance": 3,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "Font display — Est savings of 10 ms",
-                "tech": "Custom web fonts lack explicit `font-display: swap` directives, risking invisible text flashes.",
-                "plain": "Custom typography blocks text rendering briefly while font files download from external servers.",
-                "location": "Global stylesheet typography declarations / Google Fonts or local font face declarations (`@font-face`).",
-                "cwv_impact": "Prevents invisible text rendering delays, improving First Contentful Paint (FCP).",
-                "importance": 3,
-                "relevant_to": ["All", "First Contentful Paint (FCP)"]
-            },
-            {
-                "title": "Improve image delivery — Est savings of 1,287 KiB",
-                "tech": "Uncompressed raster images served above-the-fold without next-gen format negotiation (WebP/AVIF).",
-                "plain": "Product catalog and banner images are oversized file formats, wasting bandwidth and slowing down visual loading speeds.",
-                "location": "Homepage catalog grid & category landing page banners (`/images/products/` and `/banners/`).",
-                "cwv_impact": "Significantly lightens page weight, directly reducing Largest Contentful Paint (LCP) times.",
-                "importance": 1,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "Legacy JavaScript — Est savings of 7 KiB",
-                "tech": "Polyfills and transform helper functions included for obsolete browser environments.",
-                "plain": "Unnecessary compatibility code is being sent to modern web browsers.",
-                "location": "Vendor bundle scripts / Polyfill modules injected via build pipeline (`vendor.min.js`).",
-                "cwv_impact": "Decreases script execution time, improving Total Blocking Time (TBT) and interactivity.",
-                "importance": 2,
-                "relevant_to": ["All", "Total Blocking Time (TBT)"]
-            },
-            {
-                "title": "Layout shift culprits",
-                "tech": "Top banner announcements or dynamic ads resizing without reserved box dimensions.",
-                "plain": "Elements shift around as the page loads, causing accidental misclicks when users try to tap buttons.",
-                "location": "Header notification bar & promotional banner slots immediately above navigation menus.",
-                "cwv_impact": "Secures full compliance for Cumulative Layout Shift (CLS), ensuring a rock-solid visual layout.",
-                "importance": 1,
-                "relevant_to": ["All", "Cumulative Layout Shift (CLS)"]
-            },
-            {
-                "title": "3rd parties",
-                "tech": "External analytics, chat widgets, and tag managers monopolizing main-thread CPU cycles.",
-                "plain": "Third-party marketing and support tools are consuming processor power, making the page temporarily unresponsive.",
-                "location": "Footer tracking scripts & floating widget iframes (Live chat widget, Google Tag Manager container).",
-                "cwv_impact": "Frees up the main thread, directly reducing Total Blocking Time (TBT) for a smoother user experience.",
-                "importance": 2,
-                "relevant_to": ["All", "Total Blocking Time (TBT)"]
-            }
-        ]
+        # Build insights dynamically from database record thresholds
+unoptimized_kb = float(latest_row.get("unoptimized_images_kb", 1287))
+unused_css_kb = float(latest_row.get("unused_css_kb", 179))
+third_party_ms = float(latest_row.get("third_party_main_thread_ms", 450))
 
-        insights.sort(key=lambda x: x["importance"])
+insights = [
+    {
+        "title": "Render-blocking requests — Est savings of 1,380 ms",
+        "tech": f"Scripts and stylesheets on {target_url} block document parsing before initial render.",
+        "plain": "External plugins or tracking scripts are forcing the browser to wait before showing any content on the screen.",
+        "location": f"{target_url} header section (`<head>`) / Global stylesheets.",
+        "cwv_impact": "Directly improves First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
+        "importance": 1,
+        "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
+    },
+    {
+        "title": "Improve image delivery",
+        "tech": f"Uncompressed raster images detected on {target_url} wasting ~{unoptimized_kb:.0f} KB.",
+        "plain": "Product catalog and banner images are oversized file formats, slowing down visual loading speeds.",
+        "location": f"{target_url} catalog grid & banner slots.",
+        "cwv_impact": "Significantly lightens page weight, reducing Largest Contentful Paint (LCP).",
+        "importance": 1,
+        "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
+    },
+    {
+        "title": "Forced reflow",
+        "tech": "Synchronous DOM measurements triggered style recalculations during layout stages.",
+        "plain": "JavaScript code is asking the browser for element dimensions immediately after modifying styles.",
+        "location": f"{target_url} interactive components (`main.js`).",
+        "cwv_impact": "Protects Cumulative Layout Shift (CLS).",
+        "importance": 2,
+        "relevant_to": ["All", "First Contentful Paint (FCP)", "Cumulative Layout Shift (CLS)"]
+    },
+    {
+        "title": "Use efficient cache lifetimes",
+        "tech": "Static assets served with short or missing Cache-Control HTTP headers.",
+        "plain": "Returning shoppers' browsers are forced to re-download static images on every page visit.",
+        "location": f"{target_url} server static asset routing rules.",
+        "cwv_impact": "Speeds up subsequent page loads for returning users.",
+        "importance": 3,
+        "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
+    }
+]
 
-        for item in insights:
-            if insight_filter in item["relevant_to"]:
-                prefix, badge_html = get_priority_prefix_and_badge(item['importance'])
-                expander_title = f"{prefix} {item['title']}"
-                with st.expander(expander_title):
-                    st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
-                    st.markdown(f"**Technical Outcome:** {item.get('tech')}")
-                    st.markdown(f"**Plain English Translation:** {item['plain']}")
-                    st.markdown(f"**Location / Area on URL:** `{item['location']}`")
-                    st.markdown(f"**CWV Compliance Impact:** {item['cwv_impact']}")
+insights.sort(key=lambda x: x["importance"])
+
+for item in insights:
+    if insight_filter in item["relevant_to"]:
+        prefix, badge_html = get_priority_prefix_and_badge(item['importance'])
+        expander_title = f"{prefix} {item['title']}"
+        with st.expander(expander_title):
+            st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
+            st.markdown(f"**Technical Outcome:** {item.get('tech')}")
+            st.markdown(f"**Plain English Translation:** {item['plain']}")
+            st.markdown(f"**Location / Area on URL:** `{item['location']}`")
+            st.markdown(f"**CWV Compliance Impact:** {item['cwv_impact']}")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DIAGNOSTICS SECTION
+        # DYNAMIC DIAGNOSTICS SECTION
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</div>', unsafe_allow_html=True)
         
         diagnostics = [
             {
-                "title": "Reduce unused JavaScript — Est savings of 196 KiB",
-                "tech": "Unexecuted script bytes loaded during initial page initialization.",
-                "plain": "Scripts containing code that isn't needed for the initial page load are slowing down script parsing.",
-                "location": "Global bundle scripts (`bundle.js`, `cart-drawer.js`).",
-                "cwv_impact": "Improves script evaluation times, helping lower Total Blocking Time (TBT).",
-                "importance": 2
-            },
-            {
-                "title": "Reduce unused CSS — Est savings of 179 KiB",
-                "tech": "Stylesheets contain rule sets unreferenced by the current DOM structure.",
+                "title": f"Reduce unused CSS — Est savings of {unused_css_kb:.0f} KiB",
+                "tech": f"Stylesheets on {target_url} contain rule sets unreferenced by the current DOM structure.",
                 "plain": "Extra style rules for other pages are being loaded all at once, bloating file size.",
-                "location": "Main stylesheet declarations (`styles.css`, framework UI libraries).",
+                "location": f"{target_url} stylesheet declarations (`styles.css`).",
                 "cwv_impact": "Speeds up stylesheet parsing and rendering, improving First Contentful Paint (FCP).",
                 "importance": 2
             },
             {
                 "title": "Image elements do not have explicit width and height",
-                "tech": "Missing `width` and `height` attributes on `<img>` nodes cause browser reflows upon image load.",
-                "plain": "Images don't have reserved space defined in the code, causing surrounding text to jump when they finally pop in.",
-                "location": "Product grid catalog cards & footer thumbnail images.",
-                "cwv_impact": "Eliminates unexpected visual shifts, directly protecting Cumulative Layout Shift (CLS) compliance.",
+                "tech": "Missing `width` and `height` attributes on `<img>` nodes cause browser reflows.",
+                "plain": "Images don't have reserved space defined in the code, causing text to jump when they pop in.",
+                "location": f"{target_url} product grid catalog cards.",
+                "cwv_impact": "Eliminates unexpected visual shifts, protecting Cumulative Layout Shift (CLS).",
                 "importance": 1
             },
             {
-                "title": "Avoid long main-thread tasks — 5 long tasks found",
-                "tech": "Main thread execution blocks exceeding 50ms thresholds.",
-                "plain": "Heavy scripts are running uninterrupted for too long, causing freezes when users try to scroll or click.",
-                "location": "Client-side state hydration & event listener loops (`app.bundle.js`).",
-                "cwv_impact": "Enhances page responsiveness and lowers Total Blocking Time (TBT).",
-                "importance": 1
-            },
-            {
-                "title": "Avoid non-composited animations — 2 animated elements found",
-                "tech": "Animating layout properties (`top`, `left`, `width`) instead of composite properties (`transform`, `opacity`).",
-                "plain": "Visual transitions and popups are animated inefficiently, causing stuttering movement.",
-                "location": "Modal popup dialogs & promotional sliding notification banners.",
-                "cwv_impact": "Prevents jank and layout shifts during UI animations.",
-                "importance": 3
+                "title": f"Third-Party Script Drag ({third_party_ms:.0f} ms impact)",
+                "tech": f"External scripts on {target_url} monopolizing main-thread CPU cycles.",
+                "plain": "Third-party marketing tools are consuming processor power, making the page unresponsive.",
+                "location": "Footer tracking scripts & floating widget iframes.",
+                "cwv_impact": "Lowers Total Blocking Time (TBT).",
+                "importance": 2
             }
         ]
 
@@ -359,7 +290,7 @@ with tabs[0]:
             st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 16px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin-top: 8px; margin-bottom: 8px;">61</div><div style="font-size: 11px; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
 
         with col_p4:
-            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Agentic Browsing</div><div style="font-size: 28px; font-weight: 700; color: #1a73e8; margin-top: 8px; margin-bottom: 8px;">1/3</div><div style="font-size: 11px; color: #5f6368;">AI Agent Accessibility</div></div>', unsafe_allow_html=True)
+            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #1a73e8; margin-top: 8px; margin-bottom: 8px;">1/3</div><div style="font-size: 11px; color: #5f6368;">Agentic Browsing</div></div>', unsafe_allow_html=True)
 
 # TAB 2: URL VITALS
 with tabs[1]:
@@ -368,7 +299,7 @@ with tabs[1]:
         df = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at ASC;", conn)
 
     if not df.empty:
-        sel_url = st.selectbox("Select Target URL", df["target_url"].unique())
+        sel_url = st.selectbox("Select Target URL", df["target_url"].unique(), key="hist_url_sel")
         filt = df[df["target_url"] == sel_url]
         fig = px.line(filt, x="recorded_at", y=["lcp_ms", "tbt_ms", "ttfb_ms"], title="Latency Evolution (ms)")
         st.plotly_chart(fig, use_container_width=True)
