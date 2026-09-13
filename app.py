@@ -160,7 +160,7 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC INSIGHTS GENERATOR
+        # DYNAMIC INSIGHTS GENERATOR (Conditional on actual metrics)
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights</div>', unsafe_allow_html=True)
         
         filter_col1, filter_col2 = st.columns([1, 4])
@@ -182,71 +182,23 @@ with tabs[0]:
         unused_js_kb = float(latest_row.get("unused_js_kb", 0))
         third_party_ms = float(latest_row.get("third_party_main_thread_ms", 0))
 
-        insights = [
-            {
-                "title": "Render-blocking requests — Est savings of 1,380 ms",
-                "tech": f"Scripts and stylesheets on {target_url} block document parsing before initial render.",
-                "plain": "External plugins or tracking scripts are forcing the browser to wait before showing any content on the screen.",
-                "location": f"{target_url} header section (`<head>`) / Global stylesheets and tracking scripts.",
-                "cwv_impact": "Directly improves First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
+        insights = []
+
+        # Conditional Insight 1: Server Response / TTFB Impact
+        if avg_ttfb > 800:
+            insights.append({
+                "title": f"High Server Response Time ({avg_ttfb:.0f} ms)",
+                "tech": f"Initial server response for {target_url} exceeded the recommended 800ms threshold.",
+                "plain": "The server is taking too long to start sending page content back to the visitor's browser.",
+                "location": f"{target_url} server backend response pipeline.",
+                "cwv_impact": "Directly impacts First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
                 "importance": 1,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
-            },
-            {
-                "title": "Forced reflow",
-                "tech": f"Synchronous DOM measurements on {target_url} triggered style recalculations during layout stages.",
-                "plain": "JavaScript code is asking the browser for element dimensions immediately after modifying styles.",
-                "location": f"{target_url} interactive components (`main.js`).",
-                "cwv_impact": "Protects Cumulative Layout Shift (CLS).",
-                "importance": 2,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Cumulative Layout Shift (CLS)"]
-            },
-            {
-                "title": "LCP breakdown",
-                "tech": f"Sub-portion latencies on {target_url}: TTFB, Load Delay, Load Time, and Render Delay.",
-                "plain": "Measures exactly where time is lost before the main hero banner or heading image appears to the visitor.",
-                "location": f"{target_url} hero banner section / Homepage main product imagery.",
-                "cwv_impact": "Accelerates Largest Contentful Paint (LCP) delivery.",
-                "importance": 1,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "LCP request discovery",
-                "tech": f"The primary LCP element on {target_url} was discovered late due to inline styling or deferred HTML structure.",
-                "plain": "The browser didn't start downloading the main page banner until late in the page loading process.",
-                "location": f"{target_url} above-the-fold hero container (`<img>` tag).",
-                "cwv_impact": "Ensures the main hero image loads immediately, securing a 'Good' LCP score.",
-                "importance": 1,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "Network dependency tree",
-                "tech": f"Critical request chains on {target_url} delaying downstream asset fetching and execution.",
-                "plain": "A long sequence of dependent files blocks the browser from downloading critical page elements efficiently.",
-                "location": f"{target_url} resource loading pipeline / Root HTML document.",
-                "cwv_impact": "Shortens the critical rendering path, improving FCP and overall compliance.",
-                "importance": 2,
                 "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "Use efficient cache lifetimes — Est savings of 83 KiB",
-                "tech": f"Static assets on {target_url} served with short or missing Cache-Control HTTP headers.",
-                "plain": "Returning shoppers' browsers are forced to re-download static images and logo files on every visit.",
-                "location": f"{target_url} server static asset routing rules (`/static/` and `/media/`).",
-                "cwv_impact": "Reduces repeat network overhead and speeds up subsequent page loads.",
-                "importance": 3,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "Font display — Est savings of 10 ms",
-                "tech": f"Custom web fonts on {target_url} lack explicit `font-display: swap` directives.",
-                "plain": "Custom typography blocks text rendering briefly while font files download from external servers.",
-                "location": f"{target_url} global stylesheet typography declarations (`@font-face`).",
-                "cwv_impact": "Prevents invisible text rendering delays, improving First Contentful Paint (FCP).",
-                "importance": 3,
-                "relevant_to": ["All", "First Contentful Paint (FCP)"]
-            },
-            {
+            })
+
+        # Conditional Insight 2: Image Delivery Waste
+        if unoptimized_kb > 10.0:
+            insights.append({
                 "title": f"Improve image delivery — Est savings of {unoptimized_kb:.0f} KiB",
                 "tech": f"Uncompressed raster images detected on {target_url} wasting ~{unoptimized_kb:.0f} KB.",
                 "plain": "Product catalog and banner images are oversized file formats, slowing down visual loading speeds.",
@@ -254,26 +206,11 @@ with tabs[0]:
                 "cwv_impact": "Significantly lightens page weight, directly reducing Largest Contentful Paint (LCP) times.",
                 "importance": 1,
                 "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
-            {
-                "title": "Legacy JavaScript — Est savings of 7 KiB",
-                "tech": f"Polyfills and transform helper functions included on {target_url} for obsolete browser environments.",
-                "plain": "Unnecessary compatibility code is being sent to modern web browsers.",
-                "location": f"{target_url} vendor bundle scripts (`vendor.min.js`).",
-                "cwv_impact": "Decreases script execution time, improving Total Blocking Time (TBT).",
-                "importance": 2,
-                "relevant_to": ["All", "Total Blocking Time (TBT)"]
-            },
-            {
-                "title": "Layout shift culprits",
-                "tech": f"Top banner announcements or dynamic ads on {target_url} resizing without reserved box dimensions.",
-                "plain": "Elements shift around as the page loads, causing accidental misclicks when users try to tap buttons.",
-                "location": f"{target_url} header notification bar & promotional banner slots.",
-                "cwv_impact": "Secures full compliance for Cumulative Layout Shift (CLS).",
-                "importance": 1,
-                "relevant_to": ["All", "Cumulative Layout Shift (CLS)"]
-            },
-            {
+            })
+
+        # Conditional Insight 3: Third Party Drag
+        if third_party_ms > 50.0:
+            insights.append({
                 "title": f"3rd parties ({third_party_ms:.0f} ms impact)",
                 "tech": f"External analytics and chat widgets on {target_url} monopolizing main-thread CPU cycles.",
                 "plain": "Third-party marketing and support tools are consuming processor power, making the page temporarily unresponsive.",
@@ -281,8 +218,43 @@ with tabs[0]:
                 "cwv_impact": "Frees up the main thread, directly reducing Total Blocking Time (TBT).",
                 "importance": 2,
                 "relevant_to": ["All", "Total Blocking Time (TBT)"]
-            }
-        ]
+            })
+
+        # Conditional Insight 4: Layout Shift
+        if avg_cls > 0.10:
+            insights.append({
+                "title": f"Layout shift warning (CLS: {avg_cls:.3f})",
+                "tech": f"Unstable elements causing visual instability and reflows on {target_url}.",
+                "plain": "Content is shifting around while the page loads, causing accidental clicks.",
+                "location": f"{target_url} dynamic banner or ad injection blocks.",
+                "cwv_impact": "Secures compliance for Cumulative Layout Shift (CLS).",
+                "importance": 1,
+                "relevant_to": ["All", "Cumulative Layout Shift (CLS)"]
+            })
+
+        # Conditional Insight 5: Total Blocking Time
+        if avg_tbt > 200:
+            insights.append({
+                "title": f"High Total Blocking Time ({avg_tbt:.0f} ms)",
+                "tech": f"Main-thread execution tasks blocking user interaction on {target_url}.",
+                "plain": "Scripts are running too long during page load, freezing interactivity.",
+                "location": f"{target_url} client-side JavaScript execution bundles.",
+                "cwv_impact": "Improves responsiveness and lowers Total Blocking Time (TBT).",
+                "importance": 2,
+                "relevant_to": ["All", "Total Blocking Time (TBT)"]
+            })
+
+        # Fallback if metrics are completely optimal so sections don't vanish entirely
+        if not insights:
+            insights.append({
+                "title": "Optimal Performance Profile",
+                "tech": f"Core metrics for {target_url} are currently meeting recommended performance targets.",
+                "plain": "No major performance bottlenecks or critical thresholds were breached in this audit cycle.",
+                "location": f"{target_url} overall document structure.",
+                "cwv_impact": "Maintains healthy Core Web Vitals compliance.",
+                "importance": 3,
+                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)", "Cumulative Layout Shift (CLS)"]
+            })
 
         insights.sort(key=lambda x: x["importance"])
 
@@ -299,51 +271,40 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC DIAGNOSTICS SECTION
+        # DYNAMIC DIAGNOSTICS SECTION (Conditional)
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</div>', unsafe_allow_html=True)
         
-        diagnostics = [
-            {
+        diagnostics = []
+
+        if unused_js_kb > 0:
+            diagnostics.append({
                 "title": f"Reduce unused JavaScript — Est savings of {unused_js_kb:.0f} KiB",
                 "tech": f"Unexecuted script bytes loaded during initial page initialization on {target_url}.",
                 "plain": "Scripts containing code that isn't needed for the initial page load are slowing down script parsing.",
-                "location": f"{target_url} global bundle scripts (`bundle.js`, `cart-drawer.js`).",
+                "location": f"{target_url} global bundle scripts (`bundle.js`).",
                 "cwv_impact": "Improves script evaluation times, helping lower Total Blocking Time (TBT).",
                 "importance": 2
-            },
-            {
+            })
+
+        if unused_css_kb > 0:
+            diagnostics.append({
                 "title": f"Reduce unused CSS — Est savings of {unused_css_kb:.0f} KiB",
                 "tech": f"Stylesheets on {target_url} contain rule sets unreferenced by the current DOM structure.",
                 "plain": "Extra style rules for other pages are being loaded all at once, bloating file size.",
                 "location": f"{target_url} main stylesheet declarations (`styles.css`).",
                 "cwv_impact": "Speeds up stylesheet parsing and rendering, improving First Contentful Paint (FCP).",
                 "importance": 2
-            },
-            {
-                "title": "Image elements do not have explicit width and height",
-                "tech": f"Missing `width` and `height` attributes on `<img>` nodes on {target_url} cause browser reflows.",
-                "plain": "Images don't have reserved space defined in the code, causing text to jump when they pop in.",
-                "location": f"{target_url} product grid catalog cards.",
-                "cwv_impact": "Eliminates unexpected visual shifts, protecting Cumulative Layout Shift (CLS).",
-                "importance": 1
-            },
-            {
-                "title": "Avoid long main-thread tasks — 5 long tasks found",
-                "tech": f"Main thread execution blocks exceeding 50ms thresholds detected on {target_url}.",
-                "plain": "Heavy scripts are running uninterrupted for too long, causing freezes when users try to scroll or click.",
-                "location": f"{target_url} client-side state hydration & event listener loops (`app.bundle.js`).",
-                "cwv_impact": "Enhances page responsiveness and lowers Total Blocking Time (TBT).",
-                "importance": 1
-            },
-            {
-                "title": "Avoid non-composited animations — 2 animated elements found",
-                "tech": f"Animating layout properties instead of composite properties on {target_url}.",
-                "plain": "Visual transitions and popups are animated inefficiently, causing stuttering movement.",
-                "location": f"{target_url} modal popup dialogs & promotional sliding notification banners.",
-                "cwv_impact": "Prevents jank and layout shifts during UI animations.",
+            })
+
+        if not diagnostics:
+            diagnostics.append({
+                "title": "Clean Asset Bundles",
+                "tech": f"Asset payloads for {target_url} show minimal redundant resource bloat.",
+                "plain": "Code assets are appropriately scoped for the current page view.",
+                "location": f"{target_url} static resource directories.",
+                "cwv_impact": "Optimizes network transfer speeds.",
                 "importance": 3
-            }
-        ]
+            })
 
         diagnostics.sort(key=lambda x: x["importance"])
 
