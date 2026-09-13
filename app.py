@@ -314,10 +314,14 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Pull dynamic pillar scores from latest_row (with safe fallbacks if columns are missing)
-        acc_score = int(latest_row.get("accessibility_score", 0) or 90)
-        bp_score = int(latest_row.get("best_practices_score", 0) or 96)
-        seo_score = int(latest_row.get("seo_score", 0) or 61)
+        # Pull dynamic pillar scores safely from latest_row without falling back to hardcoded defaults
+        acc_raw = latest_row.get("accessibility_score")
+        bp_raw = latest_row.get("best_practices_score")
+        seo_raw = latest_row.get("seo_score")
+
+        acc_score = int(acc_raw) if pd.notnull(acc_raw) else 0
+        bp_score = int(bp_raw) if pd.notnull(bp_raw) else 0
+        seo_score = int(seo_raw) if pd.notnull(seo_raw) else 0
         
         # Calculate dynamic agentic browsing metric based on performance health
         agentic_rating = f"{min(3, max(1, int(perf_score / 35 + 1)))}/3"
