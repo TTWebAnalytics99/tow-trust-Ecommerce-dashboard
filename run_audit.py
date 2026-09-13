@@ -13,7 +13,6 @@ def run_lighthouse_audit():
     conn = psycopg2.connect(DB_URI)
     cursor = conn.cursor()
 
-    # Option 2 override: check if an environment variable specifies the target URL directly
     target_url_override = os.getenv("TARGET_URL")
     strategy_override = os.getenv("AUDIT_STRATEGY", "desktop")
 
@@ -26,8 +25,13 @@ def run_lighthouse_audit():
 
     for url, strategy in targets:
         print(f"Auditing {url} ({strategy})...")
-        # Request all required category pillars from the PageSpeed Insights API
-        api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}&category=PERFORMANCE&category=ACCESSIBILITY&category=BEST_PRACTICES&category=SEO"
+        
+        api_url = (
+            f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?"
+            f"url={url}&key={API_KEY}&strategy={strategy}"
+            f"&category=PERFORMANCE&category=ACCESSIBILITY"
+            f"&category=BEST_PRACTICES&category=SEO"
+        )
         
         try:
             response = requests.get(api_url, timeout=90)
@@ -40,7 +44,6 @@ def run_lighthouse_audit():
             audits = lh.get("audits", {})
             categories = lh.get("categories", {})
 
-            # Safely extract score floats (0.0 to 1.0) and scale to 100 integer format
             perf_raw = categories.get("performance", {}).get("score")
             acc_raw = categories.get("accessibility", {}).get("score")
             bp_raw = categories.get("best-practices", {}).get("score")
