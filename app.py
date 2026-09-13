@@ -102,16 +102,17 @@ with tabs[0]:
     else:
         df["recorded_at"] = pd.to_datetime(df["recorded_at"], utc=True)
         
-        # Dynamically populate available URLs from DB so each server/environment can be selected or auto-detected
+        # Let user select environment URL dynamically from available database targets
         available_urls = df["target_url"].unique().tolist()
-        selected_url = st.selectbox("Select Environment URL", available_urls)
+        selected_url = st.selectbox("Select Target URL / Environment", available_urls)
 
+        # Filter strictly by the chosen target URL and strategy
         df_url = df[df["target_url"] == selected_url]
         df_strat = df_url[df_url["strategy"] == selected_strategy]
         if df_strat.empty:
             df_strat = df_url  
 
-        latest_row = df_strat.iloc[-1] if not df_strat.empty else df.iloc[-1]
+        latest_row = df_strat.iloc[-1] if not df_strat.empty else df_url.iloc[-1]
         
         target_url = latest_row.get("target_url", selected_url)
         perf_score = int(latest_row.get("perf_score", 0))
@@ -135,7 +136,7 @@ with tabs[0]:
         meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {selected_strategy.capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
         st.markdown(meta_bar_html, unsafe_allow_html=True)
 
-        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for this environment (<code>{target_url}</code>) is <strong>{perf_score}/100 (Grade {current_letter})</strong>. Addressing all Level 1 and Level 2 priority insights is projected to lift performance to an estimated <strong>{estimated_optimized_score}/100 (Grade {estimated_letter})</strong>.</div></div>'
+        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for environment <code>{target_url}</code> is <strong>{perf_score}/100 (Grade {current_letter})</strong>. Addressing all Level 1 and Level 2 priority insights is projected to lift performance to an estimated <strong>{estimated_optimized_score}/100 (Grade {estimated_letter})</strong>.</div></div>'
         st.markdown(executive_summary, unsafe_allow_html=True)
 
         col_gauge, col_metrics = st.columns([1, 2.5])
@@ -155,7 +156,7 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC INSIGHTS GENERATOR BASED ON ACTUAL SERVER METRICS
+        # DYNAMIC INSIGHTS GENERATOR BASED ON DATABASE METRICS FOR THIS URL
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights</div>', unsafe_allow_html=True)
         
         filter_col1, filter_col2 = st.columns([1, 4])
@@ -172,62 +173,61 @@ with tabs[0]:
                 label_visibility="collapsed"
             )
 
-        # Build insights dynamically from database record thresholds
-unoptimized_kb = float(latest_row.get("unoptimized_images_kb", 1287))
-unused_css_kb = float(latest_row.get("unused_css_kb", 179))
-third_party_ms = float(latest_row.get("third_party_main_thread_ms", 450))
+        unoptimized_kb = float(latest_row.get("unoptimized_images_kb", 1287))
+        unused_css_kb = float(latest_row.get("unused_css_kb", 179))
+        third_party_ms = float(latest_row.get("third_party_main_thread_ms", 450))
 
-insights = [
-    {
-        "title": "Render-blocking requests — Est savings of 1,380 ms",
-        "tech": f"Scripts and stylesheets on {target_url} block document parsing before initial render.",
-        "plain": "External plugins or tracking scripts are forcing the browser to wait before showing any content on the screen.",
-        "location": f"{target_url} header section (`<head>`) / Global stylesheets.",
-        "cwv_impact": "Directly improves First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
-        "importance": 1,
-        "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
-    },
-    {
-        "title": "Improve image delivery",
-        "tech": f"Uncompressed raster images detected on {target_url} wasting ~{unoptimized_kb:.0f} KB.",
-        "plain": "Product catalog and banner images are oversized file formats, slowing down visual loading speeds.",
-        "location": f"{target_url} catalog grid & banner slots.",
-        "cwv_impact": "Significantly lightens page weight, reducing Largest Contentful Paint (LCP).",
-        "importance": 1,
-        "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-    },
-    {
-        "title": "Forced reflow",
-        "tech": "Synchronous DOM measurements triggered style recalculations during layout stages.",
-        "plain": "JavaScript code is asking the browser for element dimensions immediately after modifying styles.",
-        "location": f"{target_url} interactive components (`main.js`).",
-        "cwv_impact": "Protects Cumulative Layout Shift (CLS).",
-        "importance": 2,
-        "relevant_to": ["All", "First Contentful Paint (FCP)", "Cumulative Layout Shift (CLS)"]
-    },
-    {
-        "title": "Use efficient cache lifetimes",
-        "tech": "Static assets served with short or missing Cache-Control HTTP headers.",
-        "plain": "Returning shoppers' browsers are forced to re-download static images on every page visit.",
-        "location": f"{target_url} server static asset routing rules.",
-        "cwv_impact": "Speeds up subsequent page loads for returning users.",
-        "importance": 3,
-        "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-    }
-]
+        insights = [
+            {
+                "title": "Render-blocking requests — Est savings of 1,380 ms",
+                "tech": f"Scripts and stylesheets on {target_url} block document parsing before initial render.",
+                "plain": "External plugins or tracking scripts are forcing the browser to wait before showing any content on the screen.",
+                "location": f"{target_url} header section (`<head>`) / Global stylesheets.",
+                "cwv_impact": "Directly improves First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
+                "importance": 1,
+                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
+            },
+            {
+                "title": "Improve image delivery",
+                "tech": f"Uncompressed raster images detected on {target_url} wasting ~{unoptimized_kb:.0f} KB.",
+                "plain": "Product catalog and banner images are oversized file formats, slowing down visual loading speeds.",
+                "location": f"{target_url} catalog grid & banner slots.",
+                "cwv_impact": "Significantly lightens page weight, reducing Largest Contentful Paint (LCP).",
+                "importance": 1,
+                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
+            },
+            {
+                "title": "Forced reflow",
+                "tech": "Synchronous DOM measurements triggered style recalculations during layout stages.",
+                "plain": "JavaScript code is asking the browser for element dimensions immediately after modifying styles.",
+                "location": f"{target_url} interactive components (`main.js`).",
+                "cwv_impact": "Protects Cumulative Layout Shift (CLS).",
+                "importance": 2,
+                "relevant_to": ["All", "First Contentful Paint (FCP)", "Cumulative Layout Shift (CLS)"]
+            },
+            {
+                "title": "Use efficient cache lifetimes",
+                "tech": "Static assets served with short or missing Cache-Control HTTP headers.",
+                "plain": "Returning shoppers' browsers are forced to re-download static images on every page visit.",
+                "location": f"{target_url} server static asset routing rules.",
+                "cwv_impact": "Speeds up subsequent page loads for returning users.",
+                "importance": 3,
+                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
+            }
+        ]
 
-insights.sort(key=lambda x: x["importance"])
+        insights.sort(key=lambda x: x["importance"])
 
-for item in insights:
-    if insight_filter in item["relevant_to"]:
-        prefix, badge_html = get_priority_prefix_and_badge(item['importance'])
-        expander_title = f"{prefix} {item['title']}"
-        with st.expander(expander_title):
-            st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
-            st.markdown(f"**Technical Outcome:** {item.get('tech')}")
-            st.markdown(f"**Plain English Translation:** {item['plain']}")
-            st.markdown(f"**Location / Area on URL:** `{item['location']}`")
-            st.markdown(f"**CWV Compliance Impact:** {item['cwv_impact']}")
+        for item in insights:
+            if insight_filter in item["relevant_to"]:
+                prefix, badge_html = get_priority_prefix_and_badge(item['importance'])
+                expander_title = f"{prefix} {item['title']}"
+                with st.expander(expander_title):
+                    st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
+                    st.markdown(f"**Technical Outcome:** {item.get('tech')}")
+                    st.markdown(f"**Plain English Translation:** {item['plain']}")
+                    st.markdown(f"**Location / Area on URL:** `{item['location']}`")
+                    st.markdown(f"**CWV Compliance Impact:** {item['cwv_impact']}")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -255,7 +255,7 @@ for item in insights:
                 "title": f"Third-Party Script Drag ({third_party_ms:.0f} ms impact)",
                 "tech": f"External scripts on {target_url} monopolizing main-thread CPU cycles.",
                 "plain": "Third-party marketing tools are consuming processor power, making the page unresponsive.",
-                "location": "Footer tracking scripts & floating widget iframes.",
+                "location": f"{target_url} footer tracking scripts & widgets.",
                 "cwv_impact": "Lowers Total Blocking Time (TBT).",
                 "importance": 2
             }
@@ -290,7 +290,7 @@ for item in insights:
             st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 16px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin-top: 8px; margin-bottom: 8px;">61</div><div style="font-size: 11px; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
 
         with col_p4:
-            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #1a73e8; margin-top: 8px; margin-bottom: 8px;">1/3</div><div style="font-size: 11px; color: #5f6368;">Agentic Browsing</div></div>', unsafe_allow_html=True)
+            st.markdown('<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 700; color: #1a73e8; margin-top: 8px; margin-bottom: 8px;">1/3</div><div style="font-size: 11px; color: #5f6368;">Agentic Browsing</div></div>', unsafe_allow_html=True)
 
 # TAB 2: URL VITALS
 with tabs[1]:
