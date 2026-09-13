@@ -26,7 +26,8 @@ def run_lighthouse_audit():
 
     for url, strategy in targets:
         print(f"Auditing {url} ({strategy})...")
-        api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}&category=PERFORMANCE"
+        # Request all required category pillars from the PageSpeed Insights API
+        api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}&category=PERFORMANCE&category=ACCESSIBILITY&category=BEST_PRACTICES&category=SEO"
         
         try:
             response = requests.get(api_url, timeout=90)
@@ -40,6 +41,10 @@ def run_lighthouse_audit():
             categories = lh.get("categories", {})
 
             perf_score = int((categories.get("performance", {}).get("score", 0) or 0) * 100)
+            accessibility_score = int((categories.get("accessibility", {}).get("score", 0) or 0) * 100)
+            best_practices_score = int((categories.get("best-practices", {}).get("score", 0) or 0) * 100)
+            seo_score = int((categories.get("seo", {}).get("score", 0) or 0) * 100)
+
             lcp_ms = audits.get("largest-contentful-paint", {}).get("numericValue", 0.0)
             tbt_ms = audits.get("total-blocking-time", {}).get("numericValue", 0.0)
             cls = audits.get("cumulative-layout-shift", {}).get("numericValue", 0.0)
@@ -47,15 +52,16 @@ def run_lighthouse_audit():
             
             unoptimized_images_kb = audits.get("uses-optimized-images", {}).get("numericValue", 0.0) / 1024.0
             unused_css_kb = audits.get("unused-css-rules", {}).get("numericValue", 0.0) / 1024.0
+            unused_js_kb = audits.get("unused-javascript", {}).get("numericValue", 0.0) / 1024.0
             third_party_ms = audits.get("third-party-summary", {}).get("numericValue", 0.0)
 
             cursor.execute("""
                 INSERT INTO web_performance_logs 
-                (target_url, strategy, perf_score, lcp_ms, tbt_ms, cls, ttfb_ms, 
-                 unoptimized_images_kb, unused_css_kb, third_party_main_thread_ms)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (url, strategy, perf_score, lcp_ms, tbt_ms, cls, ttfb_ms, 
-                  unoptimized_images_kb, unused_css_kb, third_party_ms))
+                (target_url, strategy, perf_score, accessibility_score, best_practices_score, seo_score, 
+                 lcp_ms, tbt_ms, cls, ttfb_ms, unoptimized_images_kb, unused_css_kb, unused_js_kb, third_party_main_thread_ms)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (url, strategy, perf_score, accessibility_score, best_practices_score, seo_score, 
+                  lcp_ms, tbt_ms, cls, ttfb_ms, unoptimized_images_kb, unused_css_kb, unused_js_kb, third_party_ms))
             conn.commit()
             print(f"Successfully logged metrics for {url}")
 
