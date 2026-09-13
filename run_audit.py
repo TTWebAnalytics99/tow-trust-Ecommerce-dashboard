@@ -27,7 +27,7 @@ def run_lighthouse_audit():
     for url, strategy in targets:
         print(f"Auditing {url} ({strategy})...")
         # Request all required category pillars from the PageSpeed Insights API
-        api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}&category=PERFORMANCE&category=ACCESSIBILITY&category=BEST_PRACTICES&category=SEO"
+      api_url = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={url}&key={API_KEY}&strategy={strategy}&category=PERFORMANCE&category=ACCESSIBILITY&category=BEST_PRACTICES&category=SEO"
         
         try:
             response = requests.get(api_url, timeout=90)
