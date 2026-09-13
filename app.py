@@ -136,35 +136,7 @@ with tabs[0]:
         col_gauge, col_metrics = st.columns([1, 2.5])
         
         with col_gauge:
-            gauge_html = f'''
-            <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 24px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                <div style="font-size: 13px; font-weight: 600; color: #5f6368; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div>
-                <div style="display: flex; gap: 16px; justify-content: center; align-items: center; margin-bottom: 12px;">
-                    <div>
-                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">CURRENT</div>
-                        <div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {score_color}; background-color: {score_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            <span style="font-size: 26px; font-weight: 700; color: {score_color}; line-height: 1;">{perf_score}</span>
-                            <span style="font-size: 12px; font-weight: 700; color: {score_color}; margin-top: 2px;">Grade {current_letter}</span>
-                        </div>
-                    </div>
-                    <div>
-                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">EST. OPTIMIZED</div>
-                        <div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {est_color}; background-color: {est_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            <span style="font-size: 26px; font-weight: 700; color: {est_color}; line-height: 1;">{estimated_optimized_score}</span>
-                            <span style="font-size: 12px; font-weight: 700; color: {est_color}; margin-top: 2px;">Grade {estimated_letter}</span>
-                        </div>
-                    </div>
-                </div>
-                <div style="font-size: 11px; color: #5f6368; border-top: 1px solid #e8eaed; padding-top: 8px; width: 100%; margin-bottom: 10px;">Estimated score if all Level 1 & 2 fixes are resolved.</div>
-                
-                <!-- Google Lighthouse Score Weightings Legend -->
-                <div style="display: flex; justify-content: space-around; width: 100%; font-size: 11px; color: #5f6368; border-top: 1px dashed #dadce0; padding-top: 8px;">
-                    <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #ff4e42; font-weight: bold;">▲</span> <span>0–49</span></div>
-                    <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #ffa400; font-weight: bold;">■</span> <span>50–89</span></div>
-                    <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #0cce6b; font-weight: bold;">●</span> <span>90–100</span></div>
-                </div>
-            </div>
-            '''
+            gauge_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 24px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;"><div style="font-size: 13px; font-weight: 600; color: #5f6368; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div><div style="display: flex; gap: 16px; justify-content: center; align-items: center; margin-bottom: 12px;"><div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">CURRENT</div><div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {score_color}; background-color: {score_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;"><span style="font-size: 26px; font-weight: 700; color: {score_color}; line-height: 1;">{perf_score}</span><span style="font-size: 12px; font-weight: 700; color: {score_color}; margin-top: 2px;">Grade {current_letter}</span></div></div><div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">EST. OPTIMIZED</div><div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {est_color}; background-color: {est_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;"><span style="font-size: 26px; font-weight: 700; color: {est_color}; line-height: 1;">{estimated_optimized_score}</span><span style="font-size: 12px; font-weight: 700; color: {est_color}; margin-top: 2px;">Grade {estimated_letter}</span></div></div></div><div style="font-size: 11px; color: #5f6368; border-top: 1px solid #e8eaed; padding-top: 8px; width: 100%; margin-bottom: 10px;">Estimated score if all Level 1 & 2 fixes are resolved.</div><div style="display: flex; justify-content: space-around; width: 100%; font-size: 11px; color: #5f6368; border-top: 1px dashed #dadce0; padding-top: 8px;"><div style="display: flex; align-items: center; gap: 4px;"><span style="color: #ff4e42; font-weight: bold;">▲</span> <span>0–49</span></div><div style="display: flex; align-items: center; gap: 4px;"><span style="color: #ffa400; font-weight: bold;">■</span> <span>50–89</span></div><div style="display: flex; align-items: center; gap: 4px;"><span style="color: #0cce6b; font-weight: bold;">●</span> <span>90–100</span></div></div></div>'
             st.markdown(gauge_html, unsafe_allow_html=True)
 
         with col_metrics:
