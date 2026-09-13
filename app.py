@@ -307,6 +307,39 @@ with tabs[0]:
                 st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
                 st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
 
+        # ISO 9001:2015 Quality Objectives & Management Review Section (Admin Only)
+        if is_admin:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ISO 9001:2015 Quality Review & Reporting</div>', unsafe_allow_html=True)
+            
+            with st.expander("📋 View Quality Objectives & Compliance Summary"):
+                st.markdown("This section provides documented evidence of service quality and threshold adherence for internal quality audits and management reviews.")
+                
+                total_audits = len(df_url)
+                if total_audits > 0:
+                    passing_audits = len(df_url[df_url["perf_score"] >= 50])
+                    compliance_rate = (passing_audits / total_audits) * 100
+                    avg_perf = df_url["perf_score"].mean()
+                    avg_lcp_val = df_url["lcp_ms"].mean() / 1000.0
+                    
+                    col_q1, col_q2, col_q3 = st.columns(3)
+                    col_q1.metric("Quality Target Adherence", f"{compliance_rate:.1f}%", help="Percentage of audits meeting acceptable score threshold (>= 50)")
+                    col_q2.metric("Mean Performance Score", f"{avg_perf:.1f} / 100")
+                    col_q3.metric("Mean LCP Latency", f"{avg_lcp_val:.2f} s")
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    csv_data = df_url.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="📥 Download ISO Quality Audit Log (CSV)",
+                        data=csv_data,
+                        file_name=f"iso_9001_performance_audit_log_{selected_url.replace('https://', '').replace('/', '_')}.csv",
+                        mime="text/csv",
+                        help="Export immutable telemetry history for quality management records."
+                    )
+                else:
+                    st.info("Insufficient historical data for compliance calculation.")
+
 # TAB 2: URL VITALS
 with tabs[1]:
     st.header("📊 Historical URL Vitals")
