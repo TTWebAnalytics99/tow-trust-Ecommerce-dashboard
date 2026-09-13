@@ -112,11 +112,11 @@ with tabs[0]:
         if df_url.empty:
             df_url = df[df["target_url"] == selected_url]
 
-        df_strat = df_url[df_url["strategy"] == selected_strategy]
+        df_strat = df_url[df_url["strategy"] == selected_strategy].copy()
         if df_strat.empty:
-            df_strat = df_url  
-
-        latest_row = df_strat.iloc[-1] if not df_strat.empty else df_url.iloc[-1]
+            latest_row = df_url.iloc[-1]
+        else:
+            latest_row = df_strat.iloc[-1]
         
         target_url = latest_row.get("target_url", selected_url)
         perf_score = int(latest_row.get("perf_score", 0))
@@ -314,14 +314,10 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Pull dynamic pillar scores safely from latest_row without falling back to hardcoded defaults
-        acc_raw = latest_row.get("accessibility_score")
-        bp_raw = latest_row.get("best_practices_score")
-        seo_raw = latest_row.get("seo_score")
-
-        acc_score = int(acc_raw) if pd.notnull(acc_raw) else 0
-        bp_score = int(bp_raw) if pd.notnull(bp_raw) else 0
-        seo_score = int(seo_raw) if pd.notnull(seo_raw) else 0
+        # Pull dynamic pillar scores safely from latest_row (falling back to 0 only if missing)
+        acc_score = int(latest_row.get("accessibility_score", 0) or 0)
+        bp_score = int(latest_row.get("best_practices_score", 0) or 0)
+        seo_score = int(latest_row.get("seo_score", 0) or 0)
         
         # Calculate dynamic agentic browsing metric based on performance health
         agentic_rating = f"{min(3, max(1, int(perf_score / 35 + 1)))}/3"
