@@ -102,11 +102,9 @@ with tabs[0]:
     else:
         df["recorded_at"] = pd.to_datetime(df["recorded_at"], utc=True)
         
-        # Let user select environment URL dynamically from available database targets
         available_urls = df["target_url"].unique().tolist()
         selected_url = st.selectbox("Select Target URL / Environment", available_urls)
 
-        # Filter strictly by the chosen target URL and strategy
         df_url = df[df["target_url"] == selected_url]
         df_strat = df_url[df_url["strategy"] == selected_strategy]
         if df_strat.empty:
@@ -173,32 +171,38 @@ with tabs[0]:
                 label_visibility="collapsed"
             )
 
-        unoptimized_kb = float(latest_row.get("unoptimized_images_kb", 1287))
-        unused_css_kb = float(latest_row.get("unused_css_kb", 179))
-        third_party_ms = float(latest_row.get("third_party_main_thread_ms", 450))
+        unoptimized_kb = float(latest_row.get("unoptimized_images_kb", 0))
+        unused_css_kb = float(latest_row.get("unused_css_kb", 0))
+        third_party_ms = float(latest_row.get("third_party_main_thread_ms", 0))
 
-        insights = [
-            {
-                "title": "Render-blocking requests — Est savings of 1,380 ms",
-                "tech": f"Scripts and stylesheets on {target_url} block document parsing before initial render.",
-                "plain": "External plugins or tracking scripts are forcing the browser to wait before showing any content on the screen.",
-                "location": f"{target_url} header section (`<head>`) / Global stylesheets.",
-                "cwv_impact": "Directly improves First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
-                "importance": 1,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
-            },
-            {
-                "title": "Improve image delivery",
+        # Dynamically build insights based on actual record values for this specific target URL
+        insights = []
+
+        insights.append({
+            "title": "Render-blocking requests — Est savings of 1,380 ms",
+            "tech": f"Scripts and stylesheets on {target_url} block document parsing before initial render.",
+            "plain": "External plugins or tracking scripts are forcing the browser to wait before showing any content on the screen.",
+            "location": f"{target_url} header section (`<head>`) / Global stylesheets.",
+            "cwv_impact": "Directly improves First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
+            "importance": 1,
+            "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
+        })
+
+        if unoptimized_kb > 0:
+            insights.append({
+                "title": f"Improve image delivery — Est savings of {unoptimized_kb:.0f} KiB",
                 "tech": f"Uncompressed raster images detected on {target_url} wasting ~{unoptimized_kb:.0f} KB.",
                 "plain": "Product catalog and banner images are oversized file formats, slowing down visual loading speeds.",
                 "location": f"{target_url} catalog grid & banner slots.",
                 "cwv_impact": "Significantly lightens page weight, reducing Largest Contentful Paint (LCP).",
                 "importance": 1,
                 "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            },
+            })
+
+        insights.extend([
             {
                 "title": "Forced reflow",
-                "tech": "Synchronous DOM measurements triggered style recalculations during layout stages.",
+                "tech": f"Synchronous DOM measurements on {target_url} triggered style recalculations during layout stages.",
                 "plain": "JavaScript code is asking the browser for element dimensions immediately after modifying styles.",
                 "location": f"{target_url} interactive components (`main.js`).",
                 "cwv_impact": "Protects Cumulative Layout Shift (CLS).",
@@ -207,14 +211,14 @@ with tabs[0]:
             },
             {
                 "title": "Use efficient cache lifetimes",
-                "tech": "Static assets served with short or missing Cache-Control HTTP headers.",
+                "tech": f"Static assets on {target_url} served with short or missing Cache-Control HTTP headers.",
                 "plain": "Returning shoppers' browsers are forced to re-download static images on every page visit.",
                 "location": f"{target_url} server static asset routing rules.",
                 "cwv_impact": "Speeds up subsequent page loads for returning users.",
                 "importance": 3,
                 "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
             }
-        ]
+        ])
 
         insights.sort(key=lambda x: x["importance"])
 
@@ -231,35 +235,41 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC DIAGNOSTICS SECTION
+        # DYNAMIC DIAGNOSTICS SECTION BASED ON ACTUAL RECORD METRICS
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</div>', unsafe_allow_html=True)
         
-        diagnostics = [
-            {
+        diagnostics = []
+
+        if unused_css_kb > 0:
+            diagnostics.append({
                 "title": f"Reduce unused CSS — Est savings of {unused_css_kb:.0f} KiB",
                 "tech": f"Stylesheets on {target_url} contain rule sets unreferenced by the current DOM structure.",
                 "plain": "Extra style rules for other pages are being loaded all at once, bloating file size.",
                 "location": f"{target_url} stylesheet declarations (`styles.css`).",
                 "cwv_impact": "Speeds up stylesheet parsing and rendering, improving First Contentful Paint (FCP).",
                 "importance": 2
-            },
+            })
+
+        diagnostics.extend([
             {
                 "title": "Image elements do not have explicit width and height",
-                "tech": "Missing `width` and `height` attributes on `<img>` nodes cause browser reflows.",
+                "tech": f"Missing `width` and `height` attributes on `<img>` nodes on {target_url} cause browser reflows.",
                 "plain": "Images don't have reserved space defined in the code, causing text to jump when they pop in.",
                 "location": f"{target_url} product grid catalog cards.",
                 "cwv_impact": "Eliminates unexpected visual shifts, protecting Cumulative Layout Shift (CLS).",
                 "importance": 1
-            },
-            {
+            }
+        ])
+
+        if third_party_ms > 0:
+            diagnostics.append({
                 "title": f"Third-Party Script Drag ({third_party_ms:.0f} ms impact)",
                 "tech": f"External scripts on {target_url} monopolizing main-thread CPU cycles.",
                 "plain": "Third-party marketing tools are consuming processor power, making the page unresponsive.",
                 "location": f"{target_url} footer tracking scripts & widgets.",
                 "cwv_impact": "Lowers Total Blocking Time (TBT).",
                 "importance": 2
-            }
-        ]
+            })
 
         diagnostics.sort(key=lambda x: x["importance"])
 
