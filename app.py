@@ -62,6 +62,20 @@ def get_psi_grade_color(score):
     else:
         return "#ff4e42", "#fce8e6"
 
+def get_gtmetrix_letter_grade(score):
+    if score >= 90:
+        return "A"
+    elif score >= 80:
+        return "B"
+    elif score >= 70:
+        return "C"
+    elif score >= 60:
+        return "D"
+    elif score >= 50:
+        return "E"
+    else:
+        return "F"
+
 def get_priority_prefix_and_badge(importance):
     if importance == 1:
         return "🔴 [Level 1]", '<span style="background-color: #d93025; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">🔴 Level 1 (Critical Priority)</span>'
@@ -104,6 +118,12 @@ with tabs[0]:
         avg_ttfb = latest_row.get("ttfb_ms", 0.0)
         
         score_color, score_bg = get_psi_grade_color(perf_score)
+        current_letter = get_gtmetrix_letter_grade(perf_score)
+        
+        # Estimated score if all Level 1 and 2 issues are fixed (capped at 98)
+        estimated_optimized_score = min(98, perf_score + 32)
+        estimated_letter = get_gtmetrix_letter_grade(estimated_optimized_score)
+        est_color, est_bg = get_psi_grade_color(estimated_optimized_score)
         
         url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {selected_strategy}</div></div>'
         st.markdown(url_bar_html, unsafe_allow_html=True)
@@ -111,13 +131,34 @@ with tabs[0]:
         meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {selected_strategy.capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
         st.markdown(meta_bar_html, unsafe_allow_html=True)
 
-        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for this {selected_strategy} environment is <strong>{perf_score}/100</strong>. Key load speeds (Visual Speed at <strong>{avg_lcp:.2f}s</strong>) and stability (Visual Stability at <strong>{avg_cls:.3f}</strong>) are continuously audited against Google Core Web Vitals standards. <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; font-weight: 600; text-decoration: underline;">Read official CWV definitions &rarr;</a></div></div>'
+        executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for this {selected_strategy} environment is <strong>{perf_score}/100 (Grade {current_letter})</strong>. Addressing all Level 1 and Level 2 priority insights is projected to lift performance to an estimated <strong>{estimated_optimized_score}/100 (Grade {estimated_letter})</strong>. <a href="https://web.dev/explore/learn-core-web-vitals" target="_blank" style="color: #1a73e8; font-weight: 600; text-decoration: underline;">Read official CWV definitions &rarr;</a></div></div>'
         st.markdown(executive_summary, unsafe_allow_html=True)
 
         col_gauge, col_metrics = st.columns([1, 2.5])
         
         with col_gauge:
-            gauge_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 28px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;"><div style="font-size: 14px; font-weight: 500; color: #5f6368; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div><div style="width: 110px; height: 110px; border-radius: 50%; border: 8px solid {score_color}; background-color: {score_bg}; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;"><span style="font-size: 38px; font-weight: 700; color: {score_color};">{perf_score}</span></div><div style="font-size: 12px; color: #5f6368;">Scale: 0-49 (Poor) | 50-89 (Average) | 90-100 (Good)</div></div>'
+            gauge_html = f'''
+            <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 24px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div style="font-size: 13px; font-weight: 600; color: #5f6368; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div>
+                <div style="display: flex; gap: 16px; justify-content: center; align-items: center; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">CURRENT</div>
+                        <div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {score_color}; background-color: {score_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <span style="font-size: 26px; font-weight: 700; color: {score_color}; line-height: 1;">{perf_score}</span>
+                            <span style="font-size: 12px; font-weight: 700; color: {score_color}; margin-top: 2px;">Grade {current_letter}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">EST. OPTIMIZED</div>
+                        <div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {est_color}; background-color: {est_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <span style="font-size: 26px; font-weight: 700; color: {est_color}; line-height: 1;">{estimated_optimized_score}</span>
+                            <span style="font-size: 12px; font-weight: 700; color: {est_color}; margin-top: 2px;">Grade {estimated_letter}</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 11px; color: #5f6368; border-top: 1px solid #e8eaed; padding-top: 8px; width: 100%;">Estimated score if all Level 1 & 2 fixes are resolved.</div>
+            </div>
+            '''
             st.markdown(gauge_html, unsafe_allow_html=True)
 
         with col_metrics:
@@ -250,7 +291,6 @@ with tabs[0]:
             }
         ]
 
-        # Sort insights strictly by importance (1 -> 2 -> 3)
         insights.sort(key=lambda x: x["importance"])
 
         for item in insights:
@@ -266,7 +306,7 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DIAGNOSTICS SECTION (Sorted by Importance 1 -> 2 -> 3)
+        # DIAGNOSTICS SECTION
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</div>', unsafe_allow_html=True)
         
         diagnostics = [
@@ -312,7 +352,6 @@ with tabs[0]:
             }
         ]
 
-        # Sort diagnostics strictly by importance (1 -> 2 -> 3)
         diagnostics.sort(key=lambda x: x["importance"])
 
         for diag in diagnostics:
@@ -353,7 +392,7 @@ with tabs[1]:
     if not df.empty:
         sel_url = st.selectbox("Select Target URL", df["target_url"].unique())
         filt = df[df["target_url"] == sel_url]
-        fig = px.line(filt, x="recorded_at", y=["lcp_ms", "tbt_ms", "ttfb_ms"], title="Latency Evolution (ms)")
+        fig = px.line(filt, x="recorded_at", y=["lcp_ms", "tbt_ms", "ttfb_ms"], title="Latency Evolution (ms grading)")
         st.plotly_chart(fig, use_container_width=True)
 
 # TAB 3: ASSET BOTTLENECKS
