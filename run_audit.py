@@ -13,8 +13,16 @@ def run_lighthouse_audit():
     conn = psycopg2.connect(DB_URI)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT url, strategy FROM monitored_targets WHERE is_active = TRUE;")
-    targets = cursor.fetchall()
+    # Option 2 override: check if an environment variable specifies the target URL directly
+    target_url_override = os.getenv("TARGET_URL")
+    strategy_override = os.getenv("AUDIT_STRATEGY", "desktop")
+
+    if target_url_override:
+        print(f"Using environment override target: {target_url_override} ({strategy_override})")
+        targets = [(target_url_override, strategy_override)]
+    else:
+        cursor.execute("SELECT url, strategy FROM monitored_targets WHERE is_active = TRUE;")
+        targets = cursor.fetchall()
 
     for url, strategy in targets:
         print(f"Auditing {url} ({strategy})...")
