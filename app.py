@@ -112,15 +112,13 @@ with tabs[0]:
         if df_url.empty:
             df_url = df[df["target_url"] == selected_url]
 
-        df_strat = df_url[df_url["strategy"] == selected_strategy].copy()
-        if df_strat.empty:
-            latest_row = df_url.iloc[-1]
-        else:
-            latest_row = df_strat.iloc[-1]
+        # Grab the absolute latest audit record for this URL
+        latest_row = df_url.iloc[-1] if not df_url.empty else df.iloc[-1]
         
         target_url = latest_row.get("target_url", selected_url)
         perf_score = int(latest_row.get("perf_score", 0))
         recorded_time = latest_row.get("recorded_at").strftime("%b %d, %Y, %I:%M %p GMT%z") if pd.notnull(latest_row.get("recorded_at")) else "Recent Audit"
+        audit_strategy = latest_row.get("strategy", selected_strategy)
         
         avg_lcp = float(latest_row.get("lcp_ms", 0.0)) / 1000.0
         avg_tbt = float(latest_row.get("tbt_ms", 0.0))
@@ -134,10 +132,10 @@ with tabs[0]:
         estimated_letter = get_gtmetrix_letter_grade(estimated_optimized_score)
         est_color, est_bg = get_psi_grade_color(estimated_optimized_score)
         
-        url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {selected_strategy}</div></div>'
+        url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {audit_strategy}</div></div>'
         st.markdown(url_bar_html, unsafe_allow_html=True)
 
-        meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {selected_strategy.capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
+        meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {str(audit_strategy).capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
         st.markdown(meta_bar_html, unsafe_allow_html=True)
 
         executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for environment <code>{target_url}</code> is <strong>{perf_score}/100 (Grade {current_letter})</strong>. Addressing all Level 1 and Level 2 priority insights is projected to lift performance to an estimated <strong>{estimated_optimized_score}/100 (Grade {estimated_letter})</strong>.</div></div>'
@@ -266,8 +264,6 @@ with tabs[0]:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # DYNAMIC DIAGNOSTICS SECTION (Conditional)
-        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</div>', unsafe_allow_html=True)
-        
         diagnostics = []
 
         if unused_js_kb > 0:
@@ -314,12 +310,11 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Pull dynamic pillar scores safely from latest_row (falling back to 0 only if missing)
+        # Pull dynamic pillar scores safely from latest_row
         acc_score = int(latest_row.get("accessibility_score", 0) or 0)
         bp_score = int(latest_row.get("best_practices_score", 0) or 0)
         seo_score = int(latest_row.get("seo_score", 0) or 0)
         
-        # Calculate dynamic agentic browsing metric based on performance health
         agentic_rating = f"{min(3, max(1, int(perf_score / 35 + 1)))}/3"
 
         # Additional PSI Audit Pillars Section
