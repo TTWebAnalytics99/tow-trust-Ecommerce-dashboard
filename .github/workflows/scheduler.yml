@@ -25,10 +25,12 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.LIVE_DATABASE_URL }}
           PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+          TARGET_URL: "https://tow-trust.co.uk"
         run: python run_audit.py
 
       - name: Run Sandbox Environment Audit
         env:
           DATABASE_URL: ${{ secrets.SANDBOX_DATABASE_URL }}
           PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+          TARGET_URL: "https://towtrust.cloudfyuat.com"
         run: python run_audit.py
