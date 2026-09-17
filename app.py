@@ -111,10 +111,10 @@ with tabs[0]:
         available_urls = df["target_url"].unique().tolist()
         selected_url = st.selectbox("Select Target URL / Environment", available_urls)
 
-        # Explicitly query database filtered strictly by the selected target URL
-        with get_db_connection() as conn:
-            df_url = pd.read_sql_query("SELECT * FROM web_performance_logs WHERE target_url = %s ORDER BY recorded_at ASC;", conn, params=(selected_url,))
+        # Filter strictly by BOTH the selected URL AND the user's chosen strategy radio button
+        df_url = df[(df["target_url"] == selected_url) & (df["strategy"] == selected_strategy)]
 
+        # Fallback if no logs match that specific strategy yet
         if df_url.empty:
             df_url = df[df["target_url"] == selected_url]
 
@@ -123,7 +123,9 @@ with tabs[0]:
         target_url = latest_row.get("target_url", selected_url)
         perf_score = int(latest_row.get("perf_score", 0))
         recorded_time = latest_row.get("recorded_at").strftime("%b %d, %Y, %I:%M %p GMT%z") if pd.notnull(latest_row.get("recorded_at")) else "Recent Audit"
-        audit_strategy = latest_row.get("strategy", selected_strategy)
+        
+        # Enforce the user's explicit form factor selection in the UI badge
+        audit_strategy = selected_strategy  
         
         avg_lcp = float(latest_row.get("lcp_ms", 0.0)) / 1000.0
         avg_tbt = float(latest_row.get("tbt_ms", 0.0))
