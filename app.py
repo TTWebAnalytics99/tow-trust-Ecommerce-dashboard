@@ -340,6 +340,51 @@ with tabs[0]:
                 else:
                     st.info("Insufficient historical data for compliance calculation.")
 
+            # DYNAMIC TARGET MANAGEMENT (Admin Only)
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Target Environment Management</div>', unsafe_allow_html=True)
+            
+            with st.expander("⚙️ Add or Configure Monitored Target URLs"):
+                st.markdown("Register new secondary URLs (e.g., checkout flows, category pages) to include them in automated GitHub Action audits.")
+                
+                with st.form("add_target_form"):
+                    new_url = st.text_input("Target URL (must start with https://)", placeholder="https://tow-trust.co.uk/new-page")
+                    new_env_name = st.text_input("Environment / Page Label", placeholder="Product Category Page")
+                    new_strategy = st.selectbox("Form Factor Strategy", ["desktop", "mobile"])
+                    submit_target = st.form_submit_button("➕ Add Target URL")
+                    
+                    if submit_target:
+                        if new_url.startswith("https://"):
+                            try:
+                                with get_db_connection() as conn:
+                                    with conn.cursor() as cur:
+                                        cur.execute("""
+                                            INSERT INTO monitored_targets (url, strategy, is_active, environment_name)
+                                            VALUES (%s, %s, TRUE, %s)
+                                            ON CONFLICT (url) DO UPDATE 
+                                            SET is_active = TRUE, strategy = EXCLUDED.strategy, environment_name = EXCLUDED.environment_name;
+                                        """, (new_url, new_strategy, new_env_name))
+                                        conn.commit()
+                                st.success(f"Successfully registered/updated target: {new_url}")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Database error saving target: {e}")
+                        else:
+                            st.warning("URL must be valid and start with https://")
+
+                # View and manage existing targets
+                st.markdown("#### Currently Active Monitored Targets")
+                try:
+                    with get_db_connection() as conn:
+                        targets_df = pd.read_sql_query("SELECT id, url, environment_name, strategy, is_active FROM monitored_targets ORDER BY id ASC;", conn)
+                    
+                    if not targets_df.empty:
+                        st.dataframe(targets_df, use_container_width=True)
+                    else:
+                        st.info("No monitored targets found in the database.")
+                except Exception as e:
+                    st.info("Monitored targets table not initialized yet.")
+
 # TAB 2: URL VITALS
 with tabs[1]:
     st.header("📊 Historical URL Vitals")
