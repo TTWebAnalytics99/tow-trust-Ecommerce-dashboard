@@ -170,77 +170,47 @@ with tabs[0]:
             st.markdown(gauge_html, unsafe_allow_html=True)
 
         with col_metrics:
-            lcp_color = "#0cce6b" if avg_lcp <= 2.5 else ("#ffa400" if avg_lcp <= 4.0 else "#ff4e42")
-            tbt_color = "#0cce6b" if avg_tbt <= 200 else ("#ffa400" if avg_tbt <= 600 else "#ff4e42")
-            cls_color = "#0cce6b" if avg_cls <= 0.10 else ("#ffa400" if avg_cls <= 0.25 else "#ff4e42")
-            ttfb_color = "#0cce6b" if avg_ttfb <= 800 else ("#ffa400" if avg_ttfb <= 1800 else "#ff4e42")
-            si_color = "#0cce6b" if speed_index <= 3.4 else ("#ffa400" if speed_index <= 5.8 else "#ff4e42")
-            waste_color = "#0cce6b" if total_asset_waste <= 50 else ("#ffa400" if total_asset_waste <= 200 else "#ff4e42")
+            st.markdown('<div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 8px;">Performance Metrics & Score Drivers</div>', unsafe_allow_html=True)
 
-            metrics_html = f"""
-            <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">
-                    <div style="font-size: 14px; font-weight: 500; color: #202124;">Performance Metrics & Score Drivers</div>
-                    <div style="font-size: 11px; font-weight: 500; color: #1a73e8; background: #e8f0fe; padding: 3px 8px; border-radius: 4px;">⭐ Highlighted cards denote Core Web Vitals (CWV)</div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
-                    
-                    <!-- 1. LCP (CORE) -->
-                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {lcp_color}; border-top: 2px solid #1a73e8; border-right: 2px solid #1a73e8; border-bottom: 2px solid #1a73e8; position: relative;">
-                        <div style="position: absolute; top: 6px; right: 8px; font-size: 10px; background: #1a73e8; color: white; padding: 1px 5px; border-radius: 3px; font-weight: bold;">CWV CORE</div>
-                        <div style="font-size: 11px; font-weight: 600; color: #1a73e8; text-transform: uppercase;">Largest Contentful Paint</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_lcp:.2f} s</div>
-                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Main content load speed</div>
-                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 2.5s (Good)</div>
-                    </div>
+            # Native Streamlit grid (3x2) to prevent any raw code block rendering glitches
+            r1c1, r1c2, r1c3 = st.columns(3)
+            r2c1, r2c2, r2c3 = st.columns(3)
 
-                    <!-- 2. TBT (CORE) -->
-                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {tbt_color}; border-top: 2px solid #1a73e8; border-right: 2px solid #1a73e8; border-bottom: 2px solid #1a73e8; position: relative;">
-                        <div style="position: absolute; top: 6px; right: 8px; font-size: 10px; background: #1a73e8; color: white; padding: 1px 5px; border-radius: 3px; font-weight: bold;">CWV CORE</div>
-                        <div style="font-size: 11px; font-weight: 600; color: #1a73e8; text-transform: uppercase;">Total Blocking Time</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_tbt:.0f} ms</div>
-                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Interactivity freeze delay</div>
-                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 200 ms</div>
-                    </div>
+            with r1c1:
+                with st.container(border=True):
+                    st.markdown("⭐ **Largest Contentful Paint (CWV)**")
+                    lcp_delta = "Good (≤ 2.5s)" if avg_lcp <= 2.5 else "Needs Attention"
+                    st.metric(label="Main Content Load Speed", value=f"{avg_lcp:.2f} s", delta=lcp_delta, delta_color="normal" if avg_lcp <= 2.5 else "inverse")
 
-                    <!-- 3. CLS (CORE) -->
-                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {cls_color}; border-top: 2px solid #1a73e8; border-right: 2px solid #1a73e8; border-bottom: 2px solid #1a73e8; position: relative;">
-                        <div style="position: absolute; top: 6px; right: 8px; font-size: 10px; background: #1a73e8; color: white; padding: 1px 5px; border-radius: 3px; font-weight: bold;">CWV CORE</div>
-                        <div style="font-size: 11px; font-weight: 600; color: #1a73e8; text-transform: uppercase;">Cumulative Layout Shift</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_cls:.3f}</div>
-                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Visual stability / jumping</div>
-                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 0.10 (Good)</div>
-                    </div>
+            with r1c2:
+                with st.container(border=True):
+                    st.markdown("⭐ **Total Blocking Time (CWV)**")
+                    tbt_delta = "Good (≤ 200ms)" if avg_tbt <= 200 else "Needs Attention"
+                    st.metric(label="Interactivity Freeze Delay", value=f"{avg_tbt:.0f} ms", delta=tbt_delta, delta_color="normal" if avg_tbt <= 200 else "inverse")
 
-                    <!-- 4. TTFB -->
-                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {ttfb_color}; border: 1px solid #e8eaed;">
-                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Server Response Time</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_ttfb:.0f} ms</div>
-                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Initial server handshake</div>
-                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 800 ms</div>
-                    </div>
+            with r1c3:
+                with st.container(border=True):
+                    st.markdown("⭐ **Cumulative Layout Shift (CWV)**")
+                    cls_delta = "Good (≤ 0.10)" if avg_cls <= 0.10 else "Needs Attention"
+                    st.metric(label="Visual Stability / Jumping", value=f"{avg_cls:.3f}", delta=cls_delta, delta_color="normal" if avg_cls <= 0.10 else "inverse")
 
-                    <!-- 5. SPEED INDEX -->
-                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {si_color}; border: 1px solid #e8eaed;">
-                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Speed Index</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{speed_index:.2f} s</div>
-                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Visual progress paint pace</div>
-                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 3.4s</div>
-                    </div>
+            with r2c1:
+                with st.container(border=True):
+                    st.markdown("**Server Response Time**")
+                    ttfb_delta = "Good (≤ 800ms)" if avg_ttfb <= 800 else "High Latency"
+                    st.metric(label="Initial Server Handshake", value=f"{avg_ttfb:.0f} ms", delta=ttfb_delta, delta_color="normal" if avg_ttfb <= 800 else "inverse")
 
-                    <!-- 6. TOTAL ASSET WASTE -->
-                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {waste_color}; border: 1px solid #e8eaed;">
-                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Unoptimized Asset Waste</div>
-                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{total_asset_waste:.0f} KB</div>
-                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Unused JS/CSS & images</div>
-                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: Minimal payload bloat</div>
-                    </div>
+            with r2c2:
+                with st.container(border=True):
+                    st.markdown("**Speed Index**")
+                    si_delta = "Good (≤ 3.4s)" if speed_index <= 3.4 else "Slow Paint"
+                    st.metric(label="Visual Progress Pace", value=f"{speed_index:.2f} s", delta=si_delta, delta_color="normal" if speed_index <= 3.4 else "inverse")
 
-                </div>
-            </div>
-            """
-            st.markdown(metrics_html, unsafe_allow_html=True)
+            with r2c3:
+                with st.container(border=True):
+                    st.markdown("**Unoptimized Asset Waste**")
+                    waste_delta = "Low Bloat" if total_asset_waste <= 50 else "High Payload"
+                    st.metric(label="Unused JS/CSS & Images", value=f"{total_asset_waste:.0f} KB", delta=waste_delta, delta_color="normal" if total_asset_waste <= 50 else "inverse")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
