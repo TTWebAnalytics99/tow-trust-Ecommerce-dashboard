@@ -86,7 +86,6 @@ def get_priority_prefix_and_badge(importance):
 
 is_admin = st.session_state.get("role") == "admin"
 
-# Dynamic tabs: ISO Reporting is now a dedicated tab available to all users
 if is_admin:
     tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "⚙️ Custom URL Testing"]
 else:
@@ -111,10 +110,8 @@ with tabs[0]:
         available_urls = df["target_url"].unique().tolist()
         selected_url = st.selectbox("Select Target URL / Environment", available_urls)
 
-        # Filter strictly by BOTH the selected URL AND the user's chosen strategy radio button
         df_url = df[(df["target_url"] == selected_url) & (df["strategy"] == selected_strategy)]
 
-        # Fallback if no logs match that specific strategy yet
         if df_url.empty:
             df_url = df[df["target_url"] == selected_url]
 
@@ -123,7 +120,6 @@ with tabs[0]:
         target_url = latest_row.get("target_url", selected_url)
         perf_score = int(latest_row.get("perf_score", 0))
         
-        # Automatically map UTC database log to local UK time (automatically handles BST/GMT shifts)
         raw_time = latest_row.get("recorded_at")
         if pd.notnull(raw_time):
             if raw_time.tzinfo is None:
@@ -136,7 +132,6 @@ with tabs[0]:
         else:
             recorded_time = "Recent Audit"
         
-        # Enforce the user's explicit form factor selection in the UI badge
         audit_strategy = selected_strategy  
         
         avg_lcp = float(latest_row.get("lcp_ms", 0.0)) / 1000.0
@@ -182,7 +177,7 @@ with tabs[0]:
             si_color = "#0cce6b" if speed_index <= 3.4 else ("#ffa400" if speed_index <= 5.8 else "#ff4e42")
             waste_color = "#0cce6b" if total_asset_waste <= 50 else ("#ffa400" if total_asset_waste <= 200 else "#ff4e42")
 
-            metrics_html = f'''
+            metrics_html = f"""
             <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">
                     <div style="font-size: 14px; font-weight: 500; color: #202124;">Performance Metrics & Score Drivers</div>
@@ -244,7 +239,7 @@ with tabs[0]:
 
                 </div>
             </div>
-            '''
+            """
             st.markdown(metrics_html, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -371,7 +366,7 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC DIAGNOSTICS SECTION (Conditional with meaningful > 10 KB threshold)
+        # DYNAMIC DIAGNOSTICS SECTION
         diagnostics = []
 
         if unused_js_kb > 10.0:
