@@ -86,11 +86,11 @@ def get_priority_prefix_and_badge(importance):
 
 is_admin = st.session_state.get("role") == "admin"
 
-# Dynamic tabs based on user role (Admin gets an extra dedicated management tab)
+# Dynamic tabs: ISO Reporting is now a dedicated tab available to all users
 if is_admin:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "⚙️ Custom URL Testing"]
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "⚙️ Custom URL Testing"]
 else:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting"]
 
 tabs = st.tabs(tab_titles)
 
@@ -313,39 +313,6 @@ with tabs[0]:
                 st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
                 st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
 
-        # ISO 9001:2015 Quality Objectives & Management Review Section (Admin Only)
-        if is_admin:
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ISO 9001:2015 Quality Review & Reporting</div>', unsafe_allow_html=True)
-            
-            with st.expander("📋 View Quality Objectives & Compliance Summary"):
-                st.markdown("This section provides documented evidence of service quality and threshold adherence for internal quality audits and management reviews.")
-                
-                total_audits = len(df_url)
-                if total_audits > 0:
-                    passing_audits = len(df_url[df_url["perf_score"] >= 50])
-                    compliance_rate = (passing_audits / total_audits) * 100
-                    avg_perf = df_url["perf_score"].mean()
-                    avg_lcp_val = df_url["lcp_ms"].mean() / 1000.0
-                    
-                    col_q1, col_q2, col_q3 = st.columns(3)
-                    col_q1.metric("Quality Target Adherence", f"{compliance_rate:.1f}%", help="Percentage of audits meeting acceptable score threshold (>= 50)")
-                    col_q2.metric("Mean Performance Score", f"{avg_perf:.1f} / 100")
-                    col_q3.metric("Mean LCP Latency", f"{avg_lcp_val:.2f} s")
-                    
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    
-                    csv_data = df_url.to_csv(index=False).encode("utf-8")
-                    st.download_button(
-                        label="📥 Download ISO Quality Audit Log (CSV)",
-                        data=csv_data,
-                        file_name=f"iso_9001_performance_audit_log_{selected_url.replace('https://', '').replace('/', '_')}.csv",
-                        mime="text/css" if False else "text/csv",
-                        help="Export immutable telemetry history for quality management records."
-                    )
-                else:
-                    st.info("Insufficient historical data for compliance calculation.")
-
 # TAB 2: URL VITALS
 with tabs[1]:
     st.header("📊 Historical URL Vitals")
@@ -369,9 +336,51 @@ with tabs[2]:
         st.metric("Unused CSS Payload", f"{row.get('unused_css_kb', 0):.1f} KB")
         st.metric("Third-Party Script Drag", f"{row.get('third_party_main_thread_ms', 0):.0f} ms")
 
-# TAB 4: CUSTOM URL TESTING MANAGEMENT (Admin Only)
+# TAB 4: ISO REPORTING (Quality Objectives & Management Review)
+with tabs[3]:
+    st.header("📋 ISO 9001:2015 Quality Objectives & Management Review")
+    st.markdown("This section provides documented evidence of service quality and threshold adherence for internal quality audits and management reviews.")
+    
+    with get_db_connection() as conn:
+        df_all = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at ASC;", conn)
+
+    if not df_all.empty:
+        selected_iso_url = st.selectbox("Select Target URL for Compliance Report", df_all["target_url"].unique(), key="iso_url_sel")
+        df_url_iso = df_all[df_all["target_url"] == selected_iso_url]
+
+        total_audits = len(df_url_iso)
+        if total_audits > 0:
+            passing_audits = len(df_url_iso[df_url_iso["perf_score"] >= 50])
+            compliance_rate = (passing_audits / total_audits) * 100
+            avg_perf = df_url_iso["perf_score"].mean()
+            avg_lcp_val = df_url_iso["lcp_ms"].mean() / 1000.0
+            
+            col_q1, col_q2, col_q3 = st.columns(3)
+            col_q1.metric("Quality Target Adherence", f"{compliance_rate:.1f}%", help="Percentage of audits meeting acceptable score threshold (>= 50)")
+            col_q2.metric("Mean Performance Score", f"{avg_perf:.1f} / 100")
+            col_q3.metric("Mean LCP Latency", f"{avg_lcp_val:.2f} s")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            csv_data = df_url_iso.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="📥 Download ISO Quality Audit Log (CSV)",
+                data=csv_data,
+                file_name=f"iso_9001_performance_audit_log_{selected_iso_url.replace('https://', '').replace('/', '_')}.csv",
+                mime="text/csv",
+                help="Export immutable telemetry history for quality management records."
+            )
+
+            st.markdown("### Historical Audit Records")
+            st.dataframe(df_url_iso, use_container_width=True)
+        else:
+            st.info("Insufficient historical data for compliance calculation on this target URL.")
+    else:
+        st.info("No telemetry records found in database.")
+
+# TAB 5: CUSTOM URL TESTING MANAGEMENT (Admin Only)
 if is_admin:
-    with tabs[3]:
+    with tabs[4]:
         st.header("⚙️ Custom URL Testing Management")
         st.markdown("Register, configure, or remove secondary URLs (such as checkout flows and category pages) included in automated audit workflows.")
         
