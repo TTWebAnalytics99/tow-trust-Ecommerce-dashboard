@@ -122,7 +122,19 @@ with tabs[0]:
         
         target_url = latest_row.get("target_url", selected_url)
         perf_score = int(latest_row.get("perf_score", 0))
-        recorded_time = latest_row.get("recorded_at").strftime("%b %d, %Y, %I:%M %p GMT%z") if pd.notnull(latest_row.get("recorded_at")) else "Recent Audit"
+        
+        # Automatically map UTC database log to local UK time (automatically handles BST/GMT shifts)
+        raw_time = latest_row.get("recorded_at")
+        if pd.notnull(raw_time):
+            if raw_time.tzinfo is None:
+                raw_time = raw_time.tz_localize("UTC")
+            else:
+                raw_time = raw_time.tz_convert("UTC")
+            uk_time = raw_time.tz_convert("Europe/London")
+            recorded_time = uk_time.strftime("%b %d, %Y, %I:%M %p GMT%z")
+            recorded_time = recorded_time[:-2] + ":" + recorded_time[-2:]
+        else:
+            recorded_time = "Recent Audit"
         
         # Enforce the user's explicit form factor selection in the UI badge
         audit_strategy = selected_strategy  
