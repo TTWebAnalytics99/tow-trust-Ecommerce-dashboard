@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-st.set_page_config(page_title="SANDBOX TT SWPTA", layout="wide")
+st.set_page_config(page_title="TT SWPTA", layout="wide")
 
 DB_URI = st.secrets.get("DATABASE_URL") or os.getenv("DATABASE_URL")
 API_KEY = st.secrets.get("PAGESPEED_API_KEY") or os.getenv("PAGESPEED_API_KEY", "")
@@ -35,7 +35,7 @@ def authenticate():
             st.session_state["auth_ok"] = False
 
     if not st.session_state.get("auth_ok", False):
-        st.subheader("🔒 SANDBOX Tow-Trust ECommerce Web Performance and Synthetic Testing Application")
+        st.subheader("🔒 Tow-Trust ECommerce Web Performance and Synthetic Testing Application")
         st.text_input("Enter Passkey", type="password", key="pass_input", on_change=check)
         if st.session_state.get("auth_ok") is False:
             st.error("Invalid credentials.")
@@ -112,15 +112,12 @@ with tabs[0]:
         if df_url.empty:
             df_url = df[df["target_url"] == selected_url]
 
-        df_strat = df_url[df_url["strategy"] == selected_strategy]
-        if df_strat.empty:
-            df_strat = df_url  
-
-        latest_row = df_strat.iloc[-1] if not df_strat.empty else df_url.iloc[-1]
+        latest_row = df_url.iloc[-1] if not df_url.empty else df.iloc[-1]
         
         target_url = latest_row.get("target_url", selected_url)
         perf_score = int(latest_row.get("perf_score", 0))
         recorded_time = latest_row.get("recorded_at").strftime("%b %d, %Y, %I:%M %p GMT%z") if pd.notnull(latest_row.get("recorded_at")) else "Recent Audit"
+        audit_strategy = latest_row.get("strategy", selected_strategy)
         
         avg_lcp = float(latest_row.get("lcp_ms", 0.0)) / 1000.0
         avg_tbt = float(latest_row.get("tbt_ms", 0.0))
@@ -134,10 +131,10 @@ with tabs[0]:
         estimated_letter = get_gtmetrix_letter_grade(estimated_optimized_score)
         est_color, est_bg = get_psi_grade_color(estimated_optimized_score)
         
-        url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {selected_strategy}</div></div>'
+        url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {audit_strategy}</div></div>'
         st.markdown(url_bar_html, unsafe_allow_html=True)
 
-        meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {selected_strategy.capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
+        meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {str(audit_strategy).capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
         st.markdown(meta_bar_html, unsafe_allow_html=True)
 
         executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for environment <code>{target_url}</code> is <strong>{perf_score}/100 (Grade {current_letter})</strong>. Addressing all Level 1 and Level 2 priority insights is projected to lift performance to an estimated <strong>{estimated_optimized_score}/100 (Grade {estimated_letter})</strong>.</div></div>'
@@ -266,8 +263,6 @@ with tabs[0]:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # DYNAMIC DIAGNOSTICS SECTION (Conditional)
-        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Diagnostics</div>', unsafe_allow_html=True)
-        
         diagnostics = []
 
         if unused_js_kb > 0:
@@ -312,32 +307,83 @@ with tabs[0]:
                 st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
                 st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # Pull dynamic pillar scores from latest_row (with safe fallbacks if columns are missing)
-        acc_score = int(latest_row.get("accessibility_score", 0) or 90)
-        bp_score = int(latest_row.get("best_practices_score", 0) or 96)
-        seo_score = int(latest_row.get("seo_score", 0) or 61)
-        
-        # Calculate dynamic agentic browsing metric based on performance health
-        agentic_rating = f"{min(3, max(1, int(perf_score / 35 + 1)))}/3"
-
-        # Additional PSI Audit Pillars Section
-        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 12px;">Additional PageSpeed Audit Pillars</div>', unsafe_allow_html=True)
-        
-        col_p1, col_p2, col_p3, col_p4 = st.columns(4)
-        
-        with col_p1:
-            st.markdown(f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Accessibility</div><div style="font-size: 28px; font-weight: 700; color: #1a73e8; margin: 8px 0;">{acc_score}</div><div style="font-size: 11px; color: #5f6368;">Labels & Contrast Checks</div></div>', unsafe_allow_html=True)
+        # ISO 9001:2015 Quality Objectives & Management Review Section (Admin Only)
+        if is_admin:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ISO 9001:2015 Quality Review & Reporting</div>', unsafe_allow_html=True)
             
-        with col_p2:
-            st.markdown(f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #0cce6b;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">Best Practices</div><div style="font-size: 28px; font-weight: 700; color: #0cce6b; margin: 8px 0;">{bp_score}</div><div style="font-size: 11px; color: #5f6368;">Trust & Code Standards</div></div>', unsafe_allow_html=True)
-            
-        with col_p3:
-            st.markdown(f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 16px; padding: 16px; text-align: center; border-top: 4px solid #ffa400;"><div style="font-size: 13px; font-weight: 500; color: #5f6368;">SEO</div><div style="font-size: 28px; font-weight: 700; color: #ffa400; margin-top: 8px; margin-bottom: 8px;">{seo_score}</div><div style="font-size: 11px; color: #5f6368;">Crawling & Meta Tags</div></div>', unsafe_allow_html=True)
+            with st.expander("📋 View Quality Objectives & Compliance Summary"):
+                st.markdown("This section provides documented evidence of service quality and threshold adherence for internal quality audits and management reviews.")
+                
+                total_audits = len(df_url)
+                if total_audits > 0:
+                    passing_audits = len(df_url[df_url["perf_score"] >= 50])
+                    compliance_rate = (passing_audits / total_audits) * 100
+                    avg_perf = df_url["perf_score"].mean()
+                    avg_lcp_val = df_url["lcp_ms"].mean() / 1000.0
+                    
+                    col_q1, col_q2, col_q3 = st.columns(3)
+                    col_q1.metric("Quality Target Adherence", f"{compliance_rate:.1f}%", help="Percentage of audits meeting acceptable score threshold (>= 50)")
+                    col_q2.metric("Mean Performance Score", f"{avg_perf:.1f} / 100")
+                    col_q3.metric("Mean LCP Latency", f"{avg_lcp_val:.2f} s")
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    csv_data = df_url.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="📥 Download ISO Quality Audit Log (CSV)",
+                        data=csv_data,
+                        file_name=f"iso_9001_performance_audit_log_{selected_url.replace('https://', '').replace('/', '_')}.csv",
+                        mime="text/csv",
+                        help="Export immutable telemetry history for quality management records."
+                    )
+                else:
+                    st.info("Insufficient historical data for compliance calculation.")
 
-        with col_p4:
-            st.markdown(f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; text-align: center; border-top: 4px solid #1a73e8;"><div style="font-size: 13px; font-weight: 700; color: #1a73e8; margin-top: 8px; margin-bottom: 8px;">{agentic_rating}</div><div style="font-size: 11px; color: #5f6368;">Agentic Browsing</div></div>', unsafe_allow_html=True)
+            # DYNAMIC TARGET MANAGEMENT (Admin Only)
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Target Environment Management</div>', unsafe_allow_html=True)
+            
+            with st.expander("⚙️ Add or Configure Monitored Target URLs"):
+                st.markdown("Register new secondary URLs (e.g., checkout flows, category pages) to include them in automated GitHub Action audits.")
+                
+                with st.form("add_target_form"):
+                    new_url = st.text_input("Target URL (must start with https://)", placeholder="https://tow-trust.co.uk/new-page")
+                    new_env_name = st.text_input("Environment / Page Label", placeholder="Product Category Page")
+                    new_strategy = st.selectbox("Form Factor Strategy", ["desktop", "mobile"])
+                    submit_target = st.form_submit_button("➕ Add Target URL")
+                    
+                    if submit_target:
+                        if new_url.startswith("https://"):
+                            try:
+                                with get_db_connection() as conn:
+                                    with conn.cursor() as cur:
+                                        cur.execute("""
+                                            INSERT INTO monitored_targets (url, strategy, is_active, environment_name)
+                                            VALUES (%s, %s, TRUE, %s)
+                                            ON CONFLICT (url) DO UPDATE 
+                                            SET is_active = TRUE, strategy = EXCLUDED.strategy, environment_name = EXCLUDED.environment_name;
+                                        """, (new_url, new_strategy, new_env_name))
+                                        conn.commit()
+                                st.success(f"Successfully registered/updated target: {new_url}")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Database error saving target: {e}")
+                        else:
+                            st.warning("URL must be valid and start with https://")
+
+                # View and manage existing targets
+                st.markdown("#### Currently Active Monitored Targets")
+                try:
+                    with get_db_connection() as conn:
+                        targets_df = pd.read_sql_query("SELECT id, url, environment_name, strategy, is_active FROM monitored_targets ORDER BY id ASC;", conn)
+                    
+                    if not targets_df.empty:
+                        st.dataframe(targets_df, use_container_width=True)
+                    else:
+                        st.info("No monitored targets found in the database.")
+                except Exception as e:
+                    st.info("Monitored targets table not initialized yet.")
 
 # TAB 2: URL VITALS
 with tabs[1]:
