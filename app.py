@@ -88,7 +88,7 @@ is_admin = st.session_state.get("role") == "admin"
 
 # Dynamic tabs based on user role (Admin gets an extra dedicated management tab)
 if is_admin:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "⚙️ Target Management"]
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "⚙️ Custom URL Testing"]
 else:
     tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
 
