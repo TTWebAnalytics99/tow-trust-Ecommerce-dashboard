@@ -372,7 +372,7 @@ with tabs[2]:
 # TAB 4: CUSTOM URL TESTING MANAGEMENT (Admin Only)
 if is_admin:
     with tabs[3]:
-        st.header("⚙️ Target Environment Management")
+        st.header("⚙️ Custom URL Testing Management")
         st.markdown("Register, configure, or remove secondary URLs (such as checkout flows and category pages) included in automated audit workflows.")
         
         st.subheader("Add or Update Target")
