@@ -282,10 +282,10 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC DIAGNOSTICS SECTION (Conditional)
+        # DYNAMIC DIAGNOSTICS SECTION (Conditional with meaningful > 10 KB threshold)
         diagnostics = []
 
-        if unused_js_kb > 0:
+        if unused_js_kb > 10.0:
             diagnostics.append({
                 "title": f"Reduce unused JavaScript — Est savings of {unused_js_kb:.0f} KiB",
                 "tech": f"Unexecuted script bytes loaded during initial page initialization on {target_url}.",
@@ -295,7 +295,7 @@ with tabs[0]:
                 "importance": 2
             })
 
-        if unused_css_kb > 0:
+        if unused_css_kb > 10.0:
             diagnostics.append({
                 "title": f"Reduce unused CSS — Est savings of {unused_css_kb:.0f} KiB",
                 "tech": f"Stylesheets on {target_url} contain rule sets unreferenced by the current DOM structure.",
