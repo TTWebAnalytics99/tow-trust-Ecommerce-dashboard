@@ -85,7 +85,13 @@ def get_priority_prefix_and_badge(importance):
         return "🟢 [Level 3]", '<span style="background-color: #137333; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">🟢 Level 3 (Minor Optimization)</span>'
 
 is_admin = st.session_state.get("role") == "admin"
-tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
+
+# Dynamic tabs based on user role (Admin gets an extra dedicated management tab)
+if is_admin:
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "⚙️ Target Management"]
+else:
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks"]
+
 tabs = st.tabs(tab_titles)
 
 # TAB 1: EXECUTIVE BRIEFING
@@ -334,56 +340,11 @@ with tabs[0]:
                         label="📥 Download ISO Quality Audit Log (CSV)",
                         data=csv_data,
                         file_name=f"iso_9001_performance_audit_log_{selected_url.replace('https://', '').replace('/', '_')}.csv",
-                        mime="text/csv",
+                        mime="text/css" if False else "text/csv",
                         help="Export immutable telemetry history for quality management records."
                     )
                 else:
                     st.info("Insufficient historical data for compliance calculation.")
-
-            # DYNAMIC TARGET MANAGEMENT (Admin Only)
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Target Environment Management</div>', unsafe_allow_html=True)
-            
-            with st.expander("⚙️ Add or Configure Monitored Target URLs"):
-                st.markdown("Register new secondary URLs (e.g., checkout flows, category pages) to include them in automated GitHub Action audits.")
-                
-                with st.form("add_target_form"):
-                    new_url = st.text_input("Target URL (must start with https://)", placeholder="https://tow-trust.co.uk/new-page")
-                    new_env_name = st.text_input("Environment / Page Label", placeholder="Product Category Page")
-                    new_strategy = st.selectbox("Form Factor Strategy", ["desktop", "mobile"])
-                    submit_target = st.form_submit_button("➕ Add Target URL")
-                    
-                    if submit_target:
-                        if new_url.startswith("https://"):
-                            try:
-                                with get_db_connection() as conn:
-                                    with conn.cursor() as cur:
-                                        cur.execute("""
-                                            INSERT INTO monitored_targets (url, strategy, is_active, environment_name)
-                                            VALUES (%s, %s, TRUE, %s)
-                                            ON CONFLICT (url) DO UPDATE 
-                                            SET is_active = TRUE, strategy = EXCLUDED.strategy, environment_name = EXCLUDED.environment_name;
-                                        """, (new_url, new_strategy, new_env_name))
-                                        conn.commit()
-                                st.success(f"Successfully registered/updated target: {new_url}")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Database error saving target: {e}")
-                        else:
-                            st.warning("URL must be valid and start with https://")
-
-                # View and manage existing targets
-                st.markdown("#### Currently Active Monitored Targets")
-                try:
-                    with get_db_connection() as conn:
-                        targets_df = pd.read_sql_query("SELECT id, url, environment_name, strategy, is_active FROM monitored_targets ORDER BY id ASC;", conn)
-                    
-                    if not targets_df.empty:
-                        st.dataframe(targets_df, use_container_width=True)
-                    else:
-                        st.info("No monitored targets found in the database.")
-                except Exception as e:
-                    st.info("Monitored targets table not initialized yet.")
 
 # TAB 2: URL VITALS
 with tabs[1]:
@@ -407,3 +368,63 @@ with tabs[2]:
         st.metric("Unoptimized Image Waste", f"{row.get('unoptimized_images_kb', 0):.1f} KB")
         st.metric("Unused CSS Payload", f"{row.get('unused_css_kb', 0):.1f} KB")
         st.metric("Third-Party Script Drag", f"{row.get('third_party_main_thread_ms', 0):.0f} ms")
+
+# TAB 4: CUSTOM URL TESTING MANAGEMENT (Admin Only)
+if is_admin:
+    with tabs[3]:
+        st.header("⚙️ Target Environment Management")
+        st.markdown("Register, configure, or remove secondary URLs (such as checkout flows and category pages) included in automated audit workflows.")
+        
+        st.subheader("Add or Update Target")
+        with st.form("add_target_form"):
+            new_url = st.text_input("Target URL (must start with https://)", placeholder="https://tow-trust.co.uk/cart")
+            new_env_name = st.text_input("Environment / Page Label", placeholder="Checkout & Cart Flow")
+            new_strategy = st.selectbox("Form Factor Strategy", ["desktop", "mobile"])
+            submit_target = st.form_submit_button("➕ Save Target URL")
+            
+            if submit_target:
+                if new_url.startswith("https://"):
+                    try:
+                        with get_db_connection() as conn:
+                            with conn.cursor() as cur:
+                                cur.execute("""
+                                    INSERT INTO monitored_targets (url, strategy, is_active, environment_name)
+                                    VALUES (%s, %s, TRUE, %s)
+                                    ON CONFLICT (url) DO UPDATE 
+                                    SET is_active = TRUE, strategy = EXCLUDED.strategy, environment_name = EXCLUDED.environment_name;
+                                """, (new_url, new_strategy, new_env_name))
+                                conn.commit()
+                        st.success(f"Successfully registered/updated target: {new_url}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Database error saving target: {e}")
+                else:
+                    st.warning("URL must be valid and start with https://")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.subheader("Active Monitored Targets & Deletion")
+        
+        try:
+            with get_db_connection() as conn:
+                targets_df = pd.read_sql_query("SELECT id, url, environment_name, strategy, is_active FROM monitored_targets ORDER BY id ASC;", conn)
+            
+            if not targets_df.empty:
+                for idx, row in targets_df.iterrows():
+                    col_info, col_del = st.columns([5, 1])
+                    with col_info:
+                        st.markdown(f"**[{row['environment_name']}]** `{row['url']}` *(Strategy: {row['strategy']})*")
+                    with col_del:
+                        if st.button("🗑️ Delete", key=f"del_target_{row['id']}"):
+                            try:
+                                with get_db_connection() as conn:
+                                    with conn.cursor() as cur:
+                                        cur.execute("DELETE FROM monitored_targets WHERE id = %s;", (row['id'],))
+                                        conn.commit()
+                                st.success(f"Deleted target: {row['url']}")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Failed to delete target: {e}")
+            else:
+                st.info("No monitored targets configured.")
+        except Exception as e:
+            st.info("Monitored targets table not initialized yet. Ensure the database migration script has been run.")
