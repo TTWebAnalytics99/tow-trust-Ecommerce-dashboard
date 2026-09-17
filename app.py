@@ -143,6 +143,14 @@ with tabs[0]:
         avg_tbt = float(latest_row.get("tbt_ms", 0.0))
         avg_cls = float(latest_row.get("cls", 0.0))
         avg_ttfb = float(latest_row.get("ttfb_ms", 0.0))
+        speed_index = float(latest_row.get("speed_index_ms", latest_row.get("lcp_ms", 1900) * 0.9)) / 1000.0
+        
+        unoptimized_kb = float(latest_row.get("unoptimized_images_kb", 0))
+        unused_css_kb = float(latest_row.get("unused_css_kb", 0))
+        unused_js_kb = float(latest_row.get("unused_js_kb", 0))
+        third_party_ms = float(latest_row.get("third_party_main_thread_ms", 0))
+        
+        total_asset_waste = unoptimized_kb + unused_css_kb + unused_js_kb
         
         score_color, score_bg = get_psi_grade_color(perf_score)
         current_letter = get_gtmetrix_letter_grade(perf_score)
@@ -171,14 +179,78 @@ with tabs[0]:
             tbt_color = "#0cce6b" if avg_tbt <= 200 else ("#ffa400" if avg_tbt <= 600 else "#ff4e42")
             cls_color = "#0cce6b" if avg_cls <= 0.10 else ("#ffa400" if avg_cls <= 0.25 else "#ff4e42")
             ttfb_color = "#0cce6b" if avg_ttfb <= 800 else ("#ffa400" if avg_ttfb <= 1800 else "#ff4e42")
+            si_color = "#0cce6b" if speed_index <= 3.4 else ("#ffa400" if speed_index <= 5.8 else "#ff4e42")
+            waste_color = "#0cce6b" if total_asset_waste <= 50 else ("#ffa400" if total_asset_waste <= 200 else "#ff4e42")
 
-            metrics_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"><div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">Core Web Vitals & Technical Diagnostics</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;"><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {lcp_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Largest Contentful Paint</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_lcp:.2f} s</div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">How fast the main page content loads</div><div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 2.5s (Good)</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {tbt_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Total Blocking Time</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_tbt:.0f} ms</div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">How long the page freezes before responding</div><div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 200 ms</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {cls_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Cumulative Layout Shift</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_cls:.3f}</div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">How much page content unexpectedly jumps around</div><div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 0.10 (Good)</div></div><div style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid {ttfb_color};"><div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Server Response Time</div><div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_ttfb:.0f} ms</div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">How fast the server starts sending data</div><div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 800 ms</div></div></div></div>'
+            metrics_html = f'''
+            <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e8eaed; padding-bottom: 8px;">
+                    <div style="font-size: 14px; font-weight: 500; color: #202124;">Performance Metrics & Score Drivers</div>
+                    <div style="font-size: 11px; font-weight: 500; color: #1a73e8; background: #e8f0fe; padding: 3px 8px; border-radius: 4px;">⭐ Highlighted cards denote Core Web Vitals (CWV)</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                    
+                    <!-- 1. LCP (CORE) -->
+                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {lcp_color}; border-top: 2px solid #1a73e8; border-right: 2px solid #1a73e8; border-bottom: 2px solid #1a73e8; position: relative;">
+                        <div style="position: absolute; top: 6px; right: 8px; font-size: 10px; background: #1a73e8; color: white; padding: 1px 5px; border-radius: 3px; font-weight: bold;">CWV CORE</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #1a73e8; text-transform: uppercase;">Largest Contentful Paint</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_lcp:.2f} s</div>
+                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Main content load speed</div>
+                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 2.5s (Good)</div>
+                    </div>
+
+                    <!-- 2. TBT (CORE) -->
+                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {tbt_color}; border-top: 2px solid #1a73e8; border-right: 2px solid #1a73e8; border-bottom: 2px solid #1a73e8; position: relative;">
+                        <div style="position: absolute; top: 6px; right: 8px; font-size: 10px; background: #1a73e8; color: white; padding: 1px 5px; border-radius: 3px; font-weight: bold;">CWV CORE</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #1a73e8; text-transform: uppercase;">Total Blocking Time</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_tbt:.0f} ms</div>
+                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Interactivity freeze delay</div>
+                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 200 ms</div>
+                    </div>
+
+                    <!-- 3. CLS (CORE) -->
+                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {cls_color}; border-top: 2px solid #1a73e8; border-right: 2px solid #1a73e8; border-bottom: 2px solid #1a73e8; position: relative;">
+                        <div style="position: absolute; top: 6px; right: 8px; font-size: 10px; background: #1a73e8; color: white; padding: 1px 5px; border-radius: 3px; font-weight: bold;">CWV CORE</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #1a73e8; text-transform: uppercase;">Cumulative Layout Shift</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_cls:.3f}</div>
+                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Visual stability / jumping</div>
+                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 0.10 (Good)</div>
+                    </div>
+
+                    <!-- 4. TTFB -->
+                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {ttfb_color}; border: 1px solid #e8eaed;">
+                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Server Response Time</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{avg_ttfb:.0f} ms</div>
+                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Initial server handshake</div>
+                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 800 ms</div>
+                    </div>
+
+                    <!-- 5. SPEED INDEX -->
+                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {si_color}; border: 1px solid #e8eaed;">
+                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Speed Index</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{speed_index:.2f} s</div>
+                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Visual progress paint pace</div>
+                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: ≤ 3.4s</div>
+                    </div>
+
+                    <!-- 6. TOTAL ASSET WASTE -->
+                    <div style="background-color: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid {waste_color}; border: 1px solid #e8eaed;">
+                        <div style="font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase;">Unoptimized Asset Waste</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #202124; margin: 4px 0;">{total_asset_waste:.0f} KB</div>
+                        <div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-style: italic;">Unused JS/CSS & images</div>
+                        <div style="font-size: 11px; color: #1a73e8; font-weight: 500;">Target: Minimal payload bloat</div>
+                    </div>
+
+                </div>
+            </div>
+            '''
             st.markdown(metrics_html, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC INSIGHTS GENERATOR (Conditional on actual metrics)
-        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights</div>', unsafe_allow_html=True)
+        # DYNAMIC INSIGHTS GENERATOR (Comprehensive)
+        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights & Optimization Recommendations</div>', unsafe_allow_html=True)
         
         filter_col1, filter_col2 = st.columns([1, 4])
         with filter_col1:
@@ -194,11 +266,6 @@ with tabs[0]:
                 label_visibility="collapsed"
             )
 
-        unoptimized_kb = float(latest_row.get("unoptimized_images_kb", 0))
-        unused_css_kb = float(latest_row.get("unused_css_kb", 0))
-        unused_js_kb = float(latest_row.get("unused_js_kb", 0))
-        third_party_ms = float(latest_row.get("third_party_main_thread_ms", 0))
-
         insights = []
 
         if avg_ttfb > 800:
@@ -210,6 +277,28 @@ with tabs[0]:
                 "cwv_impact": "Directly impacts First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
                 "importance": 1,
                 "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)"]
+            })
+
+        if speed_index > 3.4:
+            insights.append({
+                "title": f"Slow Visual Progression — Speed Index ({speed_index:.2f} s)",
+                "tech": f"Visual content elements are rendering too slowly across the viewport on {target_url}.",
+                "plain": "Elements on the page are taking a while to visually populate on screen during the initial load phase, dragging down the overall score.",
+                "location": f"{target_url} above-the-fold render tree and critical CSS path.",
+                "cwv_impact": "Directly impacts perceived loading speed and overall Lighthouse performance score.",
+                "importance": 1,
+                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)"]
+            })
+
+        if total_asset_waste > 100.0:
+            insights.append({
+                "title": f"Excessive Asset Payload Bloat ({total_asset_waste:.0f} KiB)",
+                "tech": f"Cumulative unoptimized images, unused JS, and unused CSS are bloating the network footprint on {target_url}.",
+                "plain": "The browser is downloading unnecessary code and oversized files before the page can fully render.",
+                "location": f"{target_url} static bundle assets and media directories.",
+                "cwv_impact": "Slows down network transfer speeds, hurting both FCP, LCP, and overall performance score.",
+                "importance": 1,
+                "relevant_to": ["All", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
             })
 
         if unoptimized_kb > 10.0:
