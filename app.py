@@ -1,8 +1,13 @@
 import os
+import io
 import psycopg2
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
 st.set_page_config(page_title="TT SWPTA", layout="wide")
 
@@ -84,12 +89,79 @@ def get_priority_prefix_and_badge(importance):
     else:
         return "🟢 [Level 3]", '<span style="background-color: #137333; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">🟢 Level 3 (Minor Optimization)</span>'
 
+def generate_pdf_executive_report(df_target, target_url, strategy):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle('ReportTitle', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#1a73e8'), spaceAfter=6)
+    sub_style = ParagraphStyle('ReportSub', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#5f6368'), spaceAfter=15)
+    heading_style = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=13, textColor=colors.HexColor('#202124'), spaceBefore=12, spaceAfter=6)
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#3c4043'), leading=14, spaceAfter=8)
+
+    story.append(Paragraph("Tow-Trust ECommerce Performance Executive Report", title_style))
+    story.append(Paragraph(f"Environment: <b>{target_url}</b> | Form Factor: <b>{strategy.capitalize()}</b> | Generated: Oct 2026", sub_style))
+    story.append(Spacer(1, 10))
+
+    story.append(Paragraph("1. Executive Summary & Plain English Overview", heading_style))
+    exec_text = (
+        "This report provides an immutable, transparent record of synthetic web performance audits conducted for Tow-Trust ECommerce. "
+        "Core Web Vitals measure user experience benchmarks: <b>Largest Contentful Paint (LCP)</b> tracks main content loading speed (Target ≤ 2.5s), "
+        "<b>Total Blocking Time (TBT)</b> measures main-thread interactivity freezes (Target ≤ 200ms), and <b>Cumulative Layout Shift (CLS)</b> "
+        "evaluates visual stability and unexpected content jumping (Target ≤ 0.10)."
+    )
+    story.append(Paragraph(exec_text, body_style))
+
+    story.append(Paragraph("2. Historical Performance Metrics Summary", heading_style))
+    if not df_target.empty:
+        mean_score = df_target["perf_score"].mean()
+        mean_lcp = df_target["lcp_ms"].mean() / 1000.0
+        mean_tbt = df_target["tbt_ms"].mean()
+        mean_cls = df_target["cls"].mean()
+        
+        summary_data = [
+            ["Metric Name", "Target Standard", "Observed Average", "Compliance Status"],
+            ["Performance Score", "≥ 50 (Grade C+)", f"{mean_score:.1f} / 100", "Passing" if mean_score >= 50 else "Needs Attention"],
+            ["Largest Contentful Paint (LCP)", "≤ 2.50 s", f"{mean_lcp:.2f} s", "Passing" if mean_lcp <= 2.5 else "Exceeded"],
+            ["Total Blocking Time (TBT)", "≤ 200 ms", f"{mean_tbt:.0f} ms", "Passing" if mean_tbt <= 200 else "Exceeded"],
+            ["Cumulative Layout Shift (CLS)", "≤ 0.10", f"{mean_cls:.3f}", "Passing" if mean_cls <= 0.10 else "Exceeded"]
+        ]
+        
+        t = Table(summary_data, colWidths=[150, 100, 100, 150])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e8f0fe')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor('#174ea6')),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 10),
+            ('BOTTOMPADDING', (0,0), (-1,0), 6),
+            ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f8f9fa')),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#dadce0')),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 9),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ]))
+        story.append(t)
+    
+    story.append(Spacer(1, 15))
+    story.append(Paragraph("3. Strategic Recommendations", heading_style))
+    rec_text = (
+        "• <b>Image Compression:</b> Ensure all catalog products use next-gen formats (WebP/AVIF) to keep LCP optimized.<br/>"
+        "• <b>Layout Stability:</b> Prevent dynamic banner injections from shifting DOM elements after initial render to secure CLS compliance.<br/>"
+        "• <b>Script Budgeting:</b> Defer non-essential third-party marketing widgets to preserve main-thread CPU cycles."
+    )
+    story.append(Paragraph(rec_text, body_style))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
 is_admin = st.session_state.get("role") == "admin"
 
 if is_admin:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "⚙️ Custom URL Testing"]
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "📈 Advanced Reporting", "⚙️ Custom URL Testing"]
 else:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting"]
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "📈 Advanced Reporting"]
 
 tabs = st.tabs(tab_titles)
 
@@ -442,7 +514,6 @@ with tabs[1]:
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("**Select Core Metrics to Plot:**")
 
-            # 3x2 Grid Checkbox Layout for full legibility
             metric_mapping = {
                 "Largest Contentful Paint (LCP)": "lcp_ms",
                 "Total Blocking Time (TBT)": "tbt_ms",
@@ -517,11 +588,11 @@ with tabs[1]:
                         legend=dict(
                             orientation="h", 
                             yanchor="bottom", 
-                            y=-0.4, # Moved down to -0.4 for complete clearance from timestamps
+                            y=-0.4, 
                             xanchor="center", 
                             x=0.5
                         ),
-                        margin=dict(l=20, r=20, t=80, b=70), # Expanded bottom margin to 70px
+                        margin=dict(l=20, r=20, t=80, b=70),
                         xaxis=dict(showgrid=True, gridcolor="#f1f3f4"),
                         yaxis=dict(showgrid=True, gridcolor="#f1f3f4")
                     )
@@ -588,9 +659,68 @@ with tabs[3]:
         st.info("No telemetry records found in database.")
 
 
-# TAB 5: CUSTOM URL TESTING MANAGEMENT (Admin Only)
+# TAB 5: ADVANCED REPORTING & EXPORT CENTER
+tab_idx_reporting = 4 if not is_admin else 4 # adjust based on tab count
+with tabs[tab_idx_reporting]:
+    st.header("📈 Advanced Reporting & Multi-Format Export Center")
+    st.markdown("Generate plain-English executive summary PDF reports or export structured raw telemetry datasets formatted for Power BI and Excel.")
+
+    with get_db_connection() as conn:
+        df_export_all = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at DESC;", conn)
+
+    if df_export_all.empty:
+        st.info("No telemetry records found for reporting export.")
+    else:
+        rep_col1, rep_col2 = st.columns(2)
+        with rep_col1:
+            export_url = st.selectbox("Select Target URL for Export", df_export_all["target_url"].unique(), key="rep_url_sel")
+        with rep_col2:
+            export_strategy = st.selectbox("Select Form Factor Strategy", ["mobile", "desktop"], key="rep_strat_sel")
+
+        df_filtered_export = df_export_all[(df_export_all["target_url"] == export_url) & (df_export_all["strategy"] == export_strategy)]
+        if df_filtered_export.empty:
+            df_filtered_export = df_export_all[df_export_all["target_url"] == export_url]
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        ex_col1, ex_col2 = st.columns(2)
+        
+        with ex_col1:
+            with st.container(border=True):
+                st.markdown("### 📄 Executive PDF Report")
+                st.markdown("Download a professional summary document complete with plain-English KPI explanations, observed averages, and prioritized optimization recommendations.")
+                
+                if st.button("📥 Generate & Download Executive PDF"):
+                    pdf_bytes = generate_pdf_executive_report(df_filtered_export, export_url, export_strategy)
+                    st.download_button(
+                        label="💾 Click here to download PDF",
+                        data=pdf_bytes,
+                        file_name=f"executive_performance_report_{export_url.replace('https://', '').replace('/', '_')}.pdf",
+                        mime="application/pdf"
+                    )
+
+        with ex_col2:
+            with st.container(border=True):
+                st.markdown("### 📊 Power BI & Excel Data Workbook")
+                st.markdown("Export structured raw telemetry logs, metadata, and audit scores into an Excel workbook (`.xlsx`) ready for direct data modeling and Power BI integration.")
+                
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df_filtered_export.to_excel(writer, sheet_name='Performance Telemetry', index=False)
+                    df_export_all.to_excel(writer, sheet_name='All Environments Summary', index=False)
+                excel_data = output.getvalue()
+
+                st.download_button(
+                    label="📥 Download Excel / Power BI Workbook (.xlsx)",
+                    data=excel_data,
+                    file_name=f"tow_trust_telemetry_powerbi_{export_url.replace('https://', '').replace('/', '_')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+
+# TAB 6: CUSTOM URL TESTING MANAGEMENT (Admin Only)
 if is_admin:
-    with tabs[4]:
+    with tabs[5]:
         st.header("⚙️ Custom URL Testing Management")
         st.markdown("Register, configure, or remove secondary URLs (such as checkout flows and category pages) included in automated audit workflows.")
         
