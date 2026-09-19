@@ -380,10 +380,20 @@ with tabs[0]:
                 st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
                 st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
 
-# TAB 2: URL VITALS & TRENDS (Overhauled with robust column verification)
+
+# TAB 3: ASSET BOTTLENECKS
+with tabs[2]:
+    st.header("🎨 Asset & Resource Bottlenecks")
+    with get_db_connection() as conn:
+        df_code = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at DESC LIMIT 1;", conn)
+    if not df_code.empty:
+        row = df_code.iloc[0]
+        st.metric("Unoptimized Image Waste", f"{row.get('unoptimized_images_kb', 0):.1f} KB")
+        st.metric("Unused CSS Payload", f"{row.get('unused_css_kb', 0):.1f} KB")
+        st.metric("Third-Party Script Drag", f"{row.get('third_party# TAB 2: URL VITALS & TRENDS (Enhanced with Checkboxes, Thicker Lines, Hover Bold, and KPI Background Ranges)
 with tabs[1]:
     st.header("📊 Historical URL Vitals & Performance Trends")
-    st.markdown("Analyze longitudinal performance telemetry, track Core Web Vitals progression, and review device-specific historical trends.")
+    st.markdown("Analyze longitudinal performance telemetry, track Core Web Vitals progression against official KPI thresholds, and review device-specific trends.")
 
     ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1.5, 2.5, 2])
 
@@ -439,7 +449,10 @@ with tabs[1]:
             df_hist["recorded_at_uk"] = df_hist["recorded_at"].dt.tz_convert("Europe/London")
 
             st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("**Select Core Metrics to Plot (Tick Boxes):**")
 
+            # Organize metrics into a clean 6-column checkbox grid
+            chk_cols = st.columns(6)
             metric_mapping = {
                 "Largest Contentful Paint (LCP)": "lcp_ms",
                 "Total Blocking Time (TBT)": "tbt_ms",
@@ -449,20 +462,31 @@ with tabs[1]:
                 "Performance Score (0-100)": "perf_score"
             }
 
-            selected_metric_labels = st.multiselect(
-                "Select Core Metrics to Plot",
-                options=list(metric_mapping.keys()),
-                default=["Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
-            )
+            selected_metric_labels = []
+            defaults = ["Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
+
+            for i, (label, col_name) in enumerate(metric_mapping.items()):
+                with chk_cols[i % 6]:
+                    if st.checkbox(label, value=(label in defaults), key=f"chk_metric_{i}"):
+                        selected_metric_labels.append(label)
+
+            # KPI Threshold lookup for background reference zones
+            kpi_thresholds = {
+                "Largest Contentful Paint (LCP)": (0, 2500, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 2.5s)"),
+                "Total Blocking Time (TBT)": (0, 200, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 200ms)"),
+                "Cumulative Layout Shift (CLS)": (0, 0.10, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 0.10)"),
+                "Server Response Time (TTFB)": (0, 800, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 800ms)"),
+                "Speed Index": (0, 3400, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 3.4s)"),
+                "Performance Score (0-100)": (90, 100, "rgba(12, 206, 107, 0.08)", "Good Target (90–100)")
+            }
 
             if selected_metric_labels:
-                # Safely verify column existence in database schema to prevent KeyErrors
                 valid_mappings = {label: col for label, col in metric_mapping.items() if col in df_hist.columns}
-                
                 active_labels = [label for label in selected_metric_labels if label in valid_mappings]
                 plot_columns = [valid_mappings[label] for label in active_labels]
 
                 if plot_columns:
+                    # Convert millisecond metrics to seconds for LCP if displayed, or plot raw database values
                     df_plot = df_hist[["recorded_at_uk"] + plot_columns].copy()
                     rename_dict = {v: k for k, v in valid_mappings.items()}
                     df_plot = df_plot.rename(columns=rename_dict)
@@ -474,28 +498,41 @@ with tabs[1]:
                         title=f"Trend Analysis for {hist_url} ({hist_strategy.capitalize()})",
                         labels={"recorded_at_uk": "Timestamp (UK Time)", "value": "Metric Value", "variable": "Core Web Vital / Driver"}
                     )
+
+                    # Make lines thicker (3px) and configure hover-boldening behavior
+                    fig.update_traces(
+                        line=dict(width=3),
+                        hovertemplate="<b>%{y:.2f}</b><br>%{x}<extra>%{fullData.name}</extra>"
+                    )
+
+                    # If only one metric is selected, embed its official KPI background zone
+                    if len(active_labels) == 1:
+                        single_label = active_labels[0]
+                        if single_label in kpi_thresholds:
+                            ymin, ymax, bg_color, annotation_text = kpi_thresholds[single_label]
+                            fig.add_hrect(
+                                y0=ymin, y1=ymax, 
+                                fillcolor=bg_color, 
+                                layer="below", 
+                                line_width=0,
+                                annotation_text=annotation_text, 
+                                annotation_position="top left",
+                                annotation=dict(font_size=10, font_color="#5f6368")
+                            )
+
                     fig.update_layout(
-                        hovermode="x unified",
+                        hovermode="closest", # Highlights the exact hovered line clearly
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                        margin=dict(l=20, r=20, t=60, b=20)
+                        margin=dict(l=20, r=20, t=60, b=20),
+                        xaxis=dict(showgrid=True, gridcolor="#f1f3f4"),
+                        yaxis=dict(showgrid=True, gridcolor="#f1f3f4")
                     )
                     st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.warning("Selected metrics are not available in the database schema.")
 
             with st.expander("📋 View Underlying Telemetry Data Table"):
-                st.dataframe(df_hist, use_container_width=True)
-
-# TAB 3: ASSET BOTTLENECKS
-with tabs[2]:
-    st.header("🎨 Asset & Resource Bottlenecks")
-    with get_db_connection() as conn:
-        df_code = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at DESC LIMIT 1;", conn)
-    if not df_code.empty:
-        row = df_code.iloc[0]
-        st.metric("Unoptimized Image Waste", f"{row.get('unoptimized_images_kb', 0):.1f} KB")
-        st.metric("Unused CSS Payload", f"{row.get('unused_css_kb', 0):.1f} KB")
-        st.metric("Third-Party Script Drag", f"{row.get('third_party_main_thread_ms', 0):.0f} ms")
+                st.dataframe(df_hist, use_container_width=True)_main_thread_ms', 0):.0f} ms")
 
 # TAB 4: ISO REPORTING (Quality Objectives & Management Review)
 with tabs[3]:
