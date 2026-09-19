@@ -95,60 +95,85 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     story = []
     styles = getSampleStyleSheet()
     
-    title_style = ParagraphStyle('ReportTitle', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#1a73e8'), spaceAfter=6)
-    sub_style = ParagraphStyle('ReportSub', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#5f6368'), spaceAfter=15)
-    heading_style = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=13, textColor=colors.HexColor('#202124'), spaceBefore=12, spaceAfter=6)
-    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#3c4043'), leading=14, spaceAfter=8)
+    title_style = ParagraphStyle('ReportTitle', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#1a73e8'), spaceAfter=4)
+    sub_style = ParagraphStyle('ReportSub', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#5f6368'), spaceAfter=12)
+    heading_style = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#202124'), spaceBefore=10, spaceAfter=4)
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=9.5, textColor=colors.HexColor('#3c4043'), leading=13, spaceAfter=6)
 
     story.append(Paragraph("Tow-Trust ECommerce Performance Executive Report", title_style))
-    story.append(Paragraph(f"Environment: <b>{target_url}</b> | Form Factor: <b>{strategy.capitalize()}</b> | Time Window: <b>{time_range_label}</b>", sub_style))
-    story.append(Spacer(1, 10))
+    story.append(Paragraph(f"Environment: <b>{target_url}</b> | Form Factor: <b>{strategy.capitalize()}</b> | Telemetry Window: <b>{time_range_label}</b>", sub_style))
 
-    story.append(Paragraph("1. Executive Summary & Plain English Overview", heading_style))
-    exec_text = (
-        "This report provides an immutable, transparent record of synthetic web performance audits conducted for Tow-Trust ECommerce. "
-        "Core Web Vitals measure user experience benchmarks: <b>Largest Contentful Paint (LCP)</b> tracks main content loading speed (Target ≤ 2.5s), "
-        "<b>Total Blocking Time (TBT)</b> measures main-thread interactivity freezes (Target ≤ 200ms), and <b>Cumulative Layout Shift (CLS)</b> "
-        "evaluates visual stability and unexpected content jumping (Target ≤ 0.10)."
-    )
-    story.append(Paragraph(exec_text, body_style))
+    # SECTION 1: EXECUTIVE SUMMARY & DEFINITIONS TABLE
+    story.append(Paragraph("1. Executive Summary & Core Web Vitals Reference", heading_style))
+    story.append(Paragraph("This report summarizes synthetic performance audits for non-technical leadership, tracking adherence against standard user experience benchmarks. Definitions of key metrics evaluated in this telemetry window are detailed below:", body_style))
+    
+    def_data = [
+        ["Metric Name", "Plain English Business Definition", "Target Standard"],
+        ["Largest Contentful Paint (LCP)", "Measures how fast main page content loads for visitors. Slow LCP causes high bounce rates.", "≤ 2.50 seconds"],
+        ["Total Blocking Time (TBT)", "Measures responsiveness delays caused by background scripts freezing clicks/scrolls.", "≤ 200 milliseconds"],
+        ["Cumulative Layout Shift (CLS)", "Measures visual stability. High CLS causes buttons or text to jump mid-read.", "≤ 0.10"]
+    ]
+    
+    t_def = Table(def_data, colWidths=[140, 260, 100])
+    t_def.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e8f0fe')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor('#174ea6')),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 9),
+        ('BOTTOMPADDING', (0,0), (-1,0), 5),
+        ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f8f9fa')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#dadce0')),
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,1), (-1,-1), 8.5),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    story.append(t_def)
+    story.append(Spacer(1, 8))
 
-    story.append(Paragraph("2. Historical Performance Metrics Summary", heading_style))
+    # SECTION 2: HISTORICAL METRICS SUMMARY WITH ACTUAL TELEMETRY & A-F RATINGS
+    story.append(Paragraph("2. Historical Performance & Compliance Summary", heading_style))
     if not df_target.empty:
         mean_score = df_target["perf_score"].mean()
         mean_lcp = df_target["lcp_ms"].mean() / 1000.0
         mean_tbt = df_target["tbt_ms"].mean()
         mean_cls = df_target["cls"].mean()
         
+        score_grade = get_gtmetrix_letter_grade(mean_score)
+        lcp_grade = "A" if mean_lcp <= 2.5 else ("B" if mean_lcp <= 3.5 else "D")
+        tbt_grade = "A" if mean_tbt <= 200 else ("C" if mean_tbt <= 400 else "E")
+        cls_grade = "A" if mean_cls <= 0.10 else "D"
+        
         summary_data = [
-            ["Metric Name", "Target Standard", "Observed Average", "Compliance Status"],
-            ["Performance Score", "≥ 50 (Grade C+)", f"{mean_score:.1f} / 100", "Passing" if mean_score >= 50 else "Needs Attention"],
-            ["Largest Contentful Paint (LCP)", "≤ 2.50 s", f"{mean_lcp:.2f} s", "Passing" if mean_lcp <= 2.5 else "Exceeded"],
-            ["Total Blocking Time (TBT)", "≤ 200 ms", f"{mean_tbt:.0f} ms", "Passing" if mean_tbt <= 200 else "Exceeded"],
-            ["Cumulative Layout Shift (CLS)", "≤ 0.10", f"{mean_cls:.3f}", "Passing" if mean_cls <= 0.10 else "Exceeded"]
+            ["Metric Evaluated", "Target Benchmark", "Observed Average", "GTmetrix Grade", "Status"],
+            ["Performance Score", "≥ 50 / 100", f"{mean_score:.1f} / 100", f"Grade {score_grade}", "Passing" if mean_score >= 50 else "Needs Attention"],
+            ["Largest Contentful Paint (LCP)", "≤ 2.50 s", f"{mean_lcp:.2f} s", f"Grade {lcp_grade}", "Passing" if mean_lcp <= 2.5 else "Exceeded"],
+            ["Total Blocking Time (TBT)", "≤ 200 ms", f"{mean_tbt:.0f} ms", f"Grade {tbt_grade}", "Passing" if mean_tbt <= 200 else "Exceeded"],
+            ["Cumulative Layout Shift (CLS)", "≤ 0.10", f"{mean_cls:.3f}", f"Grade {cls_grade}", "Passing" if mean_cls <= 0.10 else "Exceeded"]
         ]
         
-        t = Table(summary_data, colWidths=[150, 100, 100, 150])
-        t.setStyle(TableStyle([
+        t_sum = Table(summary_data, colWidths=[150, 90, 85, 80, 95])
+        t_sum.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e8f0fe')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor('#174ea6')),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,0), 10),
-            ('BOTTOMPADDING', (0,0), (-1,0), 6),
+            ('FONTSIZE', (0,0), (-1,0), 9),
+            ('BOTTOMPADDING', (0,0), (-1,0), 5),
             ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f8f9fa')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#dadce0')),
             ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
-            ('FONTSIZE', (0,1), (-1,-1), 9),
+            ('FONTSIZE', (0,1), (-1,-1), 8.5),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
-        story.append(t)
+        story.append(t_sum)
     
-    story.append(Spacer(1, 15))
-    story.append(Paragraph("3. Strategic Recommendations", heading_style))
+    story.append(Spacer(1, 8))
+
+    # SECTION 3: PLAIN ENGLISH STRATEGIC RECOMMENDATIONS
+    story.append(Paragraph("3. Plain-English Executive Insights & Actions", heading_style))
     rec_text = (
-        "• <b>Image Compression:</b> Ensure all catalog products use next-gen formats (WebP/AVIF) to keep LCP optimized.<br/>"
-        "• <b>Layout Stability:</b> Prevent dynamic banner injections from shifting DOM elements after initial render to secure CLS compliance.<br/>"
-        "• <b>Script Budgeting:</b> Defer non-essential third-party marketing widgets to preserve main-thread CPU cycles."
+        "• <b>Image Optimization & Delivery:</b> Product images and promotional banners are currently the largest contributors to loading delays. Compressing and serving images in next-gen formats (WebP/AVIF) will significantly speed up page loading for mobile shoppers.<br/><br/>"
+        "• <b>Preventing Content Jumps (Visual Stability):</b> Unstable banners or dynamic widgets shifting content after load create frustration and accidental clicks. Locking element dimensions will ensure seamless navigation.<br/><br/>"
+        "• <b>Script & Third-Party Budgeting:</b> External marketing pixels and chat widgets are consuming browser processing power. Deferring non-essential scripts until after the main content loads will ensure instant interactivity."
     )
     story.append(Paragraph(rec_text, body_style))
 
