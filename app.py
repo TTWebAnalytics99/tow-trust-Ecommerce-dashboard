@@ -381,7 +381,7 @@ with tabs[0]:
                 st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
 
 
-# TAB 2: URL VITALS & TRENDS (Enhanced with Checkboxes, Thicker Lines, Hover Bold, and KPI Background Ranges)
+# TAB 2: URL VITALS & TRENDS (Enhanced with 3x2 Checkboxes, Thicker Lines, Hover Bold, and KPI Background Ranges)
 with tabs[1]:
     st.header("📊 Historical URL Vitals & Performance Trends")
     st.markdown("Analyze longitudinal performance telemetry, track Core Web Vitals progression against official KPI thresholds, and review device-specific trends.")
@@ -440,9 +440,9 @@ with tabs[1]:
             df_hist["recorded_at_uk"] = df_hist["recorded_at"].dt.tz_convert("Europe/London")
 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("**Select Core Metrics to Plot (Tick Boxes):**")
+            st.markdown("**Select Core Metrics to Plot:**")
 
-            chk_cols = st.columns(6)
+            # 3x2 Grid Checkbox Layout for full legibility
             metric_mapping = {
                 "Largest Contentful Paint (LCP)": "lcp_ms",
                 "Total Blocking Time (TBT)": "tbt_ms",
@@ -455,10 +455,16 @@ with tabs[1]:
             selected_metric_labels = []
             defaults = ["Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
 
+            row1_cols = st.columns(3)
+            row2_cols = st.columns(3)
+            all_cols = list(row1_cols) + list(row2_cols)
+
             for i, (label, col_name) in enumerate(metric_mapping.items()):
-                with chk_cols[i % 6]:
+                with all_cols[i]:
                     if st.checkbox(label, value=(label in defaults), key=f"chk_metric_{i}"):
                         selected_metric_labels.append(label)
+
+            st.markdown("<br>", unsafe_allow_html=True)
 
             kpi_thresholds = {
                 "Largest Contentful Paint (LCP)": (0, 2500, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 2.5s)"),
