@@ -517,11 +517,11 @@ with tabs[1]:
                         legend=dict(
                             orientation="h", 
                             yanchor="bottom", 
-                            y=-0.3, # Position legend comfortably below chart to prevent any text overlapping
+                            y=-0.4, # Moved down to -0.4 for complete clearance from timestamps
                             xanchor="center", 
                             x=0.5
                         ),
-                        margin=dict(l=20, r=20, t=80, b=50), # Generous top and bottom margins
+                        margin=dict(l=20, r=20, t=80, b=70), # Expanded bottom margin to 70px
                         xaxis=dict(showgrid=True, gridcolor="#f1f3f4"),
                         yaxis=dict(showgrid=True, gridcolor="#f1f3f4")
                     )
