@@ -172,44 +172,43 @@ with tabs[0]:
         with col_metrics:
             st.markdown('<div style="font-size: 14px; font-weight: 500; color: #202124; margin-bottom: 8px;">Performance Metrics & Score Drivers</div>', unsafe_allow_html=True)
 
-            # Native Streamlit grid (3x2) to prevent any raw code block rendering glitches
             r1c1, r1c2, r1c3 = st.columns(3)
             r2c1, r2c2, r2c3 = st.columns(3)
 
             with r1c1:
                 with st.container(border=True):
                     st.markdown("⭐ **Largest Contentful Paint (CWV)**")
-                    lcp_delta = "Good (≤ 2.5s)" if avg_lcp <= 2.5 else "Needs Attention"
+                    lcp_delta = "Target: ≤ 2.5s" if avg_lcp <= 2.5 else "Target: ≤ 2.5s (Exceeded)"
                     st.metric(label="Main Content Load Speed", value=f"{avg_lcp:.2f} s", delta=lcp_delta, delta_color="normal" if avg_lcp <= 2.5 else "inverse")
 
             with r1c2:
                 with st.container(border=True):
                     st.markdown("⭐ **Total Blocking Time (CWV)**")
-                    tbt_delta = "Good (≤ 200ms)" if avg_tbt <= 200 else "Needs Attention"
+                    tbt_delta = "Target: ≤ 200ms" if avg_tbt <= 200 else "Target: ≤ 200ms (Exceeded)"
                     st.metric(label="Interactivity Freeze Delay", value=f"{avg_tbt:.0f} ms", delta=tbt_delta, delta_color="normal" if avg_tbt <= 200 else "inverse")
 
             with r1c3:
                 with st.container(border=True):
                     st.markdown("⭐ **Cumulative Layout Shift (CWV)**")
-                    cls_delta = "Good (≤ 0.10)" if avg_cls <= 0.10 else "Needs Attention"
+                    cls_delta = "Target: ≤ 0.10" if avg_cls <= 0.10 else "Target: ≤ 0.10 (Exceeded)"
                     st.metric(label="Visual Stability / Jumping", value=f"{avg_cls:.3f}", delta=cls_delta, delta_color="normal" if avg_cls <= 0.10 else "inverse")
 
             with r2c1:
                 with st.container(border=True):
                     st.markdown("**Server Response Time**")
-                    ttfb_delta = "Good (≤ 800ms)" if avg_ttfb <= 800 else "High Latency"
+                    ttfb_delta = "Target: ≤ 800ms" if avg_ttfb <= 800 else "Target: ≤ 800ms (Exceeded)"
                     st.metric(label="Initial Server Handshake", value=f"{avg_ttfb:.0f} ms", delta=ttfb_delta, delta_color="normal" if avg_ttfb <= 800 else "inverse")
 
             with r2c2:
                 with st.container(border=True):
                     st.markdown("**Speed Index**")
-                    si_delta = "Good (≤ 3.4s)" if speed_index <= 3.4 else "Slow Paint"
+                    si_delta = "Target: ≤ 3.4s" if speed_index <= 3.4 else "Target: ≤ 3.4s (Exceeded)"
                     st.metric(label="Visual Progress Pace", value=f"{speed_index:.2f} s", delta=si_delta, delta_color="normal" if speed_index <= 3.4 else "inverse")
 
             with r2c3:
                 with st.container(border=True):
                     st.markdown("**Unoptimized Asset Waste**")
-                    waste_delta = "Low Bloat" if total_asset_waste <= 50 else "High Payload"
+                    waste_delta = "Target: Minimal Bloat" if total_asset_waste <= 50 else "Target: Minimal Bloat (High)"
                     st.metric(label="Unused JS/CSS & Images", value=f"{total_asset_waste:.0f} KB", delta=waste_delta, delta_color="normal" if total_asset_waste <= 50 else "inverse")
 
         st.markdown("<br>", unsafe_allow_html=True)
