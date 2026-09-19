@@ -89,7 +89,7 @@ def get_priority_prefix_and_badge(importance):
     else:
         return "🟢 [Level 3]", '<span style="background-color: #137333; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">🟢 Level 3 (Minor Optimization)</span>'
 
-def generate_pdf_executive_report(df_target, target_url, strategy):
+def generate_pdf_executive_report(df_target, target_url, strategy, time_range_label):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     story = []
@@ -101,7 +101,7 @@ def generate_pdf_executive_report(df_target, target_url, strategy):
     body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#3c4043'), leading=14, spaceAfter=8)
 
     story.append(Paragraph("Tow-Trust ECommerce Performance Executive Report", title_style))
-    story.append(Paragraph(f"Environment: <b>{target_url}</b> | Form Factor: <b>{strategy.capitalize()}</b> | Generated: Oct 2026", sub_style))
+    story.append(Paragraph(f"Environment: <b>{target_url}</b> | Form Factor: <b>{strategy.capitalize()}</b> | Time Window: <b>{time_range_label}</b>", sub_style))
     story.append(Spacer(1, 10))
 
     story.append(Paragraph("1. Executive Summary & Plain English Overview", heading_style))
@@ -476,7 +476,8 @@ with tabs[1]:
             time_range_option = st.selectbox(
                 "Telemetry Time Range", 
                 ["Last 1 Day", "Last 5 Days", "Last 10 Days", "Last 30 Days", "Last 60 Days", "Last 120 Days", "Last 180 Days+", "All Time"],
-                index=3
+                index=3,
+                key="hist_time_sel"
             )
 
         days_map = {
@@ -665,21 +666,54 @@ with tabs[tab_idx_reporting]:
     st.header("📈 Advanced Reporting & Multi-Format Export Center")
     st.markdown("Generate plain-English executive summary PDF reports or export structured raw telemetry datasets formatted for Power BI and Excel.")
 
-    with get_db_connection() as conn:
-        df_export_all = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at DESC;", conn)
+    rep_ctrl1, rep_ctrl2, rep_ctrl3 = st.columns([2, 2, 2])
 
-    if df_export_all.empty:
+    with get_db_connection() as conn:
+        df_rep_meta = pd.read_sql_query("SELECT DISTINCT target_url FROM web_performance_logs;", conn)
+
+    if df_rep_meta.empty:
         st.info("No telemetry records found for reporting export.")
     else:
-        rep_col1, rep_col2 = st.columns(2)
-        with rep_col1:
-            export_url = st.selectbox("Select Target URL for Export", df_export_all["target_url"].unique(), key="rep_url_sel")
-        with rep_col2:
+        with rep_ctrl1:
+            export_url = st.selectbox("Select Target URL for Export", df_rep_meta["target_url"].unique(), key="rep_url_sel")
+        with rep_ctrl2:
             export_strategy = st.selectbox("Select Form Factor Strategy", ["mobile", "desktop"], key="rep_strat_sel")
+        with rep_ctrl3:
+            export_time_range = st.selectbox(
+                "Telemetry Time Range", 
+                ["Last 1 Day", "Last 5 Days", "Last 10 Days", "Last 30 Days", "Last 60 Days", "Last 120 Days", "Last 180 Days+", "All Time"],
+                index=3,
+                key="rep_time_sel"
+            )
 
-        df_filtered_export = df_export_all[(df_export_all["target_url"] == export_url) & (df_export_all["strategy"] == export_strategy)]
+        export_days_map = {
+            "Last 1 Day": 1,
+            "Last 5 Days": 5,
+            "Last 10 Days": 10,
+            "Last 30 Days": 30,
+            "Last 60 Days": 60,
+            "Last 120 Days": 120,
+            "Last 180 Days+": 180,
+            "All Time": 99999
+        }
+        selected_export_days = export_days_map.get(export_time_range, 30)
+
+        with get_db_connection() as conn:
+            export_query = """
+                SELECT * FROM web_performance_logs 
+                WHERE target_url = %s AND strategy = %s 
+                AND recorded_at >= NOW() - INTERVAL '%s days'
+                ORDER BY recorded_at DESC;
+            """
+            df_filtered_export = pd.read_sql_query(export_query, conn, params=(export_url, export_strategy, selected_export_days))
+
         if df_filtered_export.empty:
-            df_filtered_export = df_export_all[df_export_all["target_url"] == export_url]
+            with get_db_connection() as conn:
+                fallback_export_query = "SELECT * FROM web_performance_logs WHERE target_url = %s AND strategy = %s ORDER BY recorded_at DESC;"
+                df_filtered_export = pd.read_sql_query(fallback_export_query, conn, params=(export_url, export_strategy))
+
+        with get_db_connection() as conn:
+            df_export_all = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at DESC;", conn)
 
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -688,21 +722,21 @@ with tabs[tab_idx_reporting]:
         with ex_col1:
             with st.container(border=True):
                 st.markdown("### 📄 Executive PDF Report")
-                st.markdown("Download a professional summary document complete with plain-English KPI explanations, observed averages, and prioritized optimization recommendations.")
+                st.markdown(f"Download a professional summary document for **{export_url}** ({export_strategy.capitalize()}, {export_time_range}) complete with plain-English KPI explanations, observed averages, and prioritized optimization recommendations.")
                 
                 if st.button("📥 Generate & Download Executive PDF"):
-                    pdf_bytes = generate_pdf_executive_report(df_filtered_export, export_url, export_strategy)
+                    pdf_bytes = generate_pdf_executive_report(df_filtered_export, export_url, export_strategy, export_time_range)
                     st.download_button(
                         label="💾 Click here to download PDF",
                         data=pdf_bytes,
-                        file_name=f"executive_performance_report_{export_url.replace('https://', '').replace('/', '_')}.pdf",
+                        file_name=f"executive_performance_report_{export_url.replace('https://', '').replace('/', '_')}_{export_strategy}.pdf",
                         mime="application/pdf"
                     )
 
         with ex_col2:
             with st.container(border=True):
                 st.markdown("### 📊 Power BI & Excel Data Workbook")
-                st.markdown("Export structured raw telemetry logs, metadata, and audit scores into an Excel workbook (`.xlsx`) ready for direct data modeling and Power BI integration.")
+                st.markdown("Export structured raw telemetry logs, metadata, and audit scores into an Excel workbook (`.xlsx`) filtered by your selected timeframe and form factor, ready for Power BI integration.")
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -714,14 +748,14 @@ with tabs[tab_idx_reporting]:
                     for col in df_export_all_clean.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
                         df_export_all_clean[col] = df_export_all_clean[col].dt.tz_localize(None)
 
-                    df_filtered_export_clean.to_excel(writer, sheet_name='Performance Telemetry', index=False)
+                    df_filtered_export_clean.to_excel(writer, sheet_name='Filtered Telemetry', index=False)
                     df_export_all_clean.to_excel(writer, sheet_name='All Environments Summary', index=False)
                 excel_data = output.getvalue()
 
                 st.download_button(
                     label="📥 Download Excel / Power BI Workbook (.xlsx)",
                     data=excel_data,
-                    file_name=f"tow_trust_telemetry_powerbi_{export_url.replace('https://', '').replace('/', '_')}.xlsx",
+                    file_name=f"tow_trust_telemetry_powerbi_{export_url.replace('https://', '').replace('/', '_')}_{export_strategy}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
