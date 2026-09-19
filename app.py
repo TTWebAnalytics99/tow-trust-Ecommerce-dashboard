@@ -99,32 +99,30 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     sub_style = ParagraphStyle('ReportSub', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#5f6368'), spaceAfter=12)
     heading_style = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#202124'), spaceBefore=10, spaceAfter=4)
     body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=9.5, textColor=colors.HexColor('#3c4043'), leading=13, spaceAfter=6)
+    cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#3c4043'), leading=11)
+    cell_header_style = ParagraphStyle('CellHeader', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#174ea6'), fontName='Helvetica-Bold', leading=11)
 
     story.append(Paragraph("Tow-Trust ECommerce Performance Executive Report", title_style))
     story.append(Paragraph(f"Environment: <b>{target_url}</b> | Form Factor: <b>{strategy.capitalize()}</b> | Telemetry Window: <b>{time_range_label}</b>", sub_style))
 
-    # SECTION 1: EXECUTIVE SUMMARY & DEFINITIONS TABLE
+    # SECTION 1: EXECUTIVE SUMMARY & CORE WEB VITALS REFERENCE TABLE
     story.append(Paragraph("1. Executive Summary & Core Web Vitals Reference", heading_style))
     story.append(Paragraph("This report summarizes synthetic performance audits for non-technical leadership, tracking adherence against standard user experience benchmarks. Definitions of key metrics evaluated in this telemetry window are detailed below:", body_style))
     
     def_data = [
-        ["Metric Name", "Plain English Business Definition", "Target Standard"],
-        ["Largest Contentful Paint (LCP)", "Measures how fast main page content loads for visitors. Slow LCP causes high bounce rates.", "≤ 2.50 seconds"],
-        ["Total Blocking Time (TBT)", "Measures responsiveness delays caused by background scripts freezing clicks/scrolls.", "≤ 200 milliseconds"],
-        ["Cumulative Layout Shift (CLS)", "Measures visual stability. High CLS causes buttons or text to jump mid-read.", "≤ 0.10"]
+        [Paragraph("Metric Name", cell_header_style), Paragraph("Plain English Business Definition", cell_header_style), Paragraph("Target Standard", cell_header_style)],
+        [Paragraph("Largest Contentful Paint (LCP)", cell_style), Paragraph("Measures how fast main page content loads for visitors. Slow LCP causes high bounce rates.", cell_style), Paragraph("≤ 2.50 seconds", cell_style)],
+        [Paragraph("Total Blocking Time (TBT)", cell_style), Paragraph("Measures responsiveness delays caused by background scripts freezing clicks/scrolls.", cell_style), Paragraph("≤ 200 milliseconds", cell_style)],
+        [Paragraph("Cumulative Layout Shift (CLS)", cell_style), Paragraph("Measures visual stability. High CLS causes buttons or text to jump mid-read.", cell_style), Paragraph("≤ 0.10", cell_style)]
     ]
     
-    t_def = Table(def_data, colWidths=[140, 260, 100])
+    t_def = Table(def_data, colWidths=[140, 240, 120])
     t_def.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e8f0fe')),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor('#174ea6')),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 9),
-        ('BOTTOMPADDING', (0,0), (-1,0), 5),
+        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        ('TOPPADDING', (0,0), (-1,0), 6),
         ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f8f9fa')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#dadce0')),
-        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
-        ('FONTSIZE', (0,1), (-1,-1), 8.5),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(t_def)
@@ -144,24 +142,20 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
         cls_grade = "A" if mean_cls <= 0.10 else "D"
         
         summary_data = [
-            ["Metric Evaluated", "Target Benchmark", "Observed Average", "GTmetrix Grade", "Status"],
-            ["Performance Score", "≥ 50 / 100", f"{mean_score:.1f} / 100", f"Grade {score_grade}", "Passing" if mean_score >= 50 else "Needs Attention"],
-            ["Largest Contentful Paint (LCP)", "≤ 2.50 s", f"{mean_lcp:.2f} s", f"Grade {lcp_grade}", "Passing" if mean_lcp <= 2.5 else "Exceeded"],
-            ["Total Blocking Time (TBT)", "≤ 200 ms", f"{mean_tbt:.0f} ms", f"Grade {tbt_grade}", "Passing" if mean_tbt <= 200 else "Exceeded"],
-            ["Cumulative Layout Shift (CLS)", "≤ 0.10", f"{mean_cls:.3f}", f"Grade {cls_grade}", "Passing" if mean_cls <= 0.10 else "Exceeded"]
+            [Paragraph("Metric Evaluated", cell_header_style), Paragraph("Target Benchmark", cell_header_style), Paragraph("Observed Average", cell_header_style), Paragraph("GTmetrix Grade", cell_header_style), Paragraph("Status", cell_header_style)],
+            [Paragraph("Performance Score", cell_style), Paragraph("≥ 50 / 100", cell_style), Paragraph(f"{mean_score:.1f} / 100", cell_style), Paragraph(f"Grade {score_grade}", cell_style), Paragraph("Passing" if mean_score >= 50 else "Needs Attention", cell_style)],
+            [Paragraph("Largest Contentful Paint (LCP)", cell_style), Paragraph("≤ 2.50 s", cell_style), Paragraph(f"{mean_lcp:.2f} s", cell_style), Paragraph(f"Grade {lcp_grade}", cell_style), Paragraph("Passing" if mean_lcp <= 2.5 else "Exceeded", cell_style)],
+            [Paragraph("Total Blocking Time (TBT)", cell_style), Paragraph("≤ 200 ms", cell_style), Paragraph(f"{mean_tbt:.0f} ms", cell_style), Paragraph(f"Grade {tbt_grade}", cell_style), Paragraph("Passing" if mean_tbt <= 200 else "Exceeded", cell_style)],
+            [Paragraph("Cumulative Layout Shift (CLS)", cell_style), Paragraph("≤ 0.10", cell_style), Paragraph(f"{mean_cls:.3f}", cell_style), Paragraph(f"Grade {cls_grade}", cell_style), Paragraph("Passing" if mean_cls <= 0.10 else "Exceeded", cell_style)]
         ]
         
-        t_sum = Table(summary_data, colWidths=[150, 90, 85, 80, 95])
+        t_sum = Table(summary_data, colWidths=[140, 95, 85, 80, 100])
         t_sum.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e8f0fe')),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor('#174ea6')),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,0), 9),
             ('BOTTOMPADDING', (0,0), (-1,0), 5),
+            ('TOPPADDING', (0,0), (-1,0), 5),
             ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f8f9fa')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#dadce0')),
-            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
-            ('FONTSIZE', (0,1), (-1,-1), 8.5),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         story.append(t_sum)
