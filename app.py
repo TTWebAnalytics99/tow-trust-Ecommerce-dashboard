@@ -380,7 +380,7 @@ with tabs[0]:
                 st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
                 st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
 
-# TAB 2: URL VITALS & TRENDS (Overhauled)
+# TAB 2: URL VITALS & TRENDS (Overhauled with robust column verification)
 with tabs[1]:
     st.header("📊 Historical URL Vitals & Performance Trends")
     st.markdown("Analyze longitudinal performance telemetry, track Core Web Vitals progression, and review device-specific historical trends.")
@@ -456,25 +456,32 @@ with tabs[1]:
             )
 
             if selected_metric_labels:
-                plot_columns = [metric_mapping[label] for label in selected_metric_labels]
+                # Safely verify column existence in database schema to prevent KeyErrors
+                valid_mappings = {label: col for label, col in metric_mapping.items() if col in df_hist.columns}
+                
+                active_labels = [label for label in selected_metric_labels if label in valid_mappings]
+                plot_columns = [valid_mappings[label] for label in active_labels]
 
-                df_plot = df_hist[["recorded_at_uk"] + plot_columns].copy()
-                rename_dict = {v: k for k, v in metric_mapping.items()}
-                df_plot = df_plot.rename(columns=rename_dict)
+                if plot_columns:
+                    df_plot = df_hist[["recorded_at_uk"] + plot_columns].copy()
+                    rename_dict = {v: k for k, v in valid_mappings.items()}
+                    df_plot = df_plot.rename(columns=rename_dict)
 
-                fig = px.line(
-                    df_plot, 
-                    x="recorded_at_uk", 
-                    y=selected_metric_labels,
-                    title=f"Trend Analysis for {hist_url} ({hist_strategy.capitalize()})",
-                    labels={"recorded_at_uk": "Timestamp (UK Time)", "value": "Metric Value", "variable": "Core Web Vital / Driver"}
-                )
-                fig.update_layout(
-                    hovermode="x unified",
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                    margin=dict(l=20, r=20, t=60, b=20)
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                    fig = px.line(
+                        df_plot, 
+                        x="recorded_at_uk", 
+                        y=active_labels,
+                        title=f"Trend Analysis for {hist_url} ({hist_strategy.capitalize()})",
+                        labels={"recorded_at_uk": "Timestamp (UK Time)", "value": "Metric Value", "variable": "Core Web Vital / Driver"}
+                    )
+                    fig.update_layout(
+                        hovermode="x unified",
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                        margin=dict(l=20, r=20, t=60, b=20)
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("Selected metrics are not available in the database schema.")
 
             with st.expander("📋 View Underlying Telemetry Data Table"):
                 st.dataframe(df_hist, use_container_width=True)
