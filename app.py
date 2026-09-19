@@ -380,17 +380,104 @@ with tabs[0]:
                 st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
                 st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
 
-# TAB 2: URL VITALS
+# TAB 2: URL VITALS & TRENDS (Overhauled)
 with tabs[1]:
-    st.header("📊 Historical URL Vitals")
-    with get_db_connection() as conn:
-        df = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at ASC;", conn)
+    st.header("📊 Historical URL Vitals & Performance Trends")
+    st.markdown("Analyze longitudinal performance telemetry, track Core Web Vitals progression, and review device-specific historical trends.")
 
-    if not df.empty:
-        sel_url = st.selectbox("Select Target URL", df["target_url"].unique(), key="hist_url_sel")
-        filt = df[df["target_url"] == sel_url]
-        fig = px.line(filt, x="recorded_at", y=["lcp_ms", "tbt_ms", "ttfb_ms"], title="Latency Evolution (ms)")
-        st.plotly_chart(fig, use_container_width=True)
+    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1.5, 2.5, 2])
+
+    with ctrl_col1:
+        hist_strategy = st.radio("Form Factor", ["mobile", "desktop"], horizontal=True, key="hist_strat_radio")
+
+    with get_db_connection() as conn:
+        df_hist_meta = pd.read_sql_query("SELECT DISTINCT target_url FROM web_performance_logs;", conn)
+
+    if df_hist_meta.empty:
+        st.info("No performance history recorded yet.")
+    else:
+        with ctrl_col2:
+            hist_url = st.selectbox("Target Environment", df_hist_meta["target_url"].unique(), key="hist_url_sel")
+
+        with ctrl_col3:
+            time_range_option = st.selectbox(
+                "Telemetry Time Range", 
+                ["Last 1 Day", "Last 5 Days", "Last 10 Days", "Last 30 Days", "Last 60 Days", "Last 120 Days", "Last 180 Days+", "All Time"],
+                index=3
+            )
+
+        days_map = {
+            "Last 1 Day": 1,
+            "Last 5 Days": 5,
+            "Last 10 Days": 10,
+            "Last 30 Days": 30,
+            "Last 60 Days": 60,
+            "Last 120 Days": 120,
+            "Last 180 Days+": 180,
+            "All Time": 99999
+        }
+        selected_days = days_map.get(time_range_option, 30)
+
+        with get_db_connection() as conn:
+            query = """
+                SELECT * FROM web_performance_logs 
+                WHERE target_url = %s AND strategy = %s 
+                AND recorded_at >= NOW() - INTERVAL '%s days'
+                ORDER BY recorded_at ASC;
+            """
+            df_hist = pd.read_sql_query(query, conn, params=(hist_url, hist_strategy, selected_days))
+
+        if df_hist.empty:
+            with get_db_connection() as conn:
+                fallback_query = "SELECT * FROM web_performance_logs WHERE target_url = %s AND strategy = %s ORDER BY recorded_at ASC;"
+                df_hist = pd.read_sql_query(fallback_query, conn, params=(hist_url, hist_strategy))
+
+        if df_hist.empty:
+            st.warning(f"No records found for {hist_url} ({hist_strategy}) within the selected timeframe.")
+        else:
+            df_hist["recorded_at"] = pd.to_datetime(df_hist["recorded_at"], utc=True)
+            df_hist["recorded_at_uk"] = df_hist["recorded_at"].dt.tz_convert("Europe/London")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            metric_mapping = {
+                "Largest Contentful Paint (LCP)": "lcp_ms",
+                "Total Blocking Time (TBT)": "tbt_ms",
+                "Cumulative Layout Shift (CLS)": "cls",
+                "Server Response Time (TTFB)": "ttfb_ms",
+                "Speed Index": "speed_index_ms",
+                "Performance Score (0-100)": "perf_score"
+            }
+
+            selected_metric_labels = st.multiselect(
+                "Select Core Metrics to Plot",
+                options=list(metric_mapping.keys()),
+                default=["Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
+            )
+
+            if selected_metric_labels:
+                plot_columns = [metric_mapping[label] for label in selected_metric_labels]
+
+                df_plot = df_hist[["recorded_at_uk"] + plot_columns].copy()
+                rename_dict = {v: k for k, v in metric_mapping.items()}
+                df_plot = df_plot.rename(columns=rename_dict)
+
+                fig = px.line(
+                    df_plot, 
+                    x="recorded_at_uk", 
+                    y=selected_metric_labels,
+                    title=f"Trend Analysis for {hist_url} ({hist_strategy.capitalize()})",
+                    labels={"recorded_at_uk": "Timestamp (UK Time)", "value": "Metric Value", "variable": "Core Web Vital / Driver"}
+                )
+                fig.update_layout(
+                    hovermode="x unified",
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                    margin=dict(l=20, r=20, t=60, b=20)
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+            with st.expander("📋 View Underlying Telemetry Data Table"):
+                st.dataframe(df_hist, use_container_width=True)
 
 # TAB 3: ASSET BOTTLENECKS
 with tabs[2]:
