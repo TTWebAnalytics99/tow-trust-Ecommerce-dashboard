@@ -166,7 +166,7 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     story.append(Paragraph("3. Plain-English Executive Insights & User Journey Actions", heading_style))
     rec_text = (
         "• <b>Parts Finder Cascading Latency:</b> Dropdown selections (Make ➔ Model ➔ Year) currently experience noticeable processing pauses during server roundtrips. Indexing relational vehicle datasets and implementing client-side caching will streamline vehicle lookup.<br/><br/>"
-        "• <b>Carriage Rule & Compliance Processing (97,000 Records):</b> Adding items to the basket triggers heavy synchronous rule evaluations across 97,000 product compliance records. Offloading rule calculation to asynchronous background jobs or optimized SQL indexing will eliminate checkout stalls.<br/><br/>"
+        "• <b>Carriage Rule & Compliance Processing (97,000 Records):</b> Adding items to the basket triggers heavy rule evaluations across 97,000 product compliance records and carrier/postcode matrices. Offloading calculation to asynchronous background jobs or optimized SQL indexing will eliminate checkout stalls.<br/><br/>"
         "• <b>Catalog & Side Filter Responsiveness:</b> Toggling category filters ('Processing...' pauses) blocks UI interaction. Debouncing filter queries and optimizing AJAX response payloads will ensure instant user feedback."
     )
     story.append(Paragraph(rec_text, body_style))
@@ -178,9 +178,9 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
 is_admin = st.session_state.get("role") == "admin"
 
 if is_admin:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "📈 Advanced Reporting", "⚙️ Custom URL Testing"]
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "📈 Advanced Reporting", "⚙️ Custom URL Testing", "🛒 Basket Checkout & Carriage Testing"]
 else:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "📈 Advanced Reporting"]
+    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "📈 Advanced Reporting", "🛒 Basket Checkout & Carriage Testing"]
 
 tabs = st.tabs(tab_titles)
 
@@ -304,7 +304,7 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC INSIGHTS GENERATOR (Comprehensive + User Journey Diagnostics)
+        # DYNAMIC INSIGHTS GENERATOR
         st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights & User Journey Recommendations</div>', unsafe_allow_html=True)
         
         filter_col1, filter_col2 = st.columns([1, 4])
@@ -732,3 +732,30 @@ if is_admin:
                 st.info("No monitored targets configured.")
         except Exception as e:
             st.info("Monitored targets table not initialized yet. Ensure the database migration script has been run.")
+
+
+# TAB 7: BASKET CHECKOUT & CARRIAGE TESTING
+tab_idx_carriage = 6 if is_admin else 5
+with tabs[tab_idx_carriage]:
+    st.header("🛒 Basket Checkout & Carriage Testing")
+    st.markdown("Monitor synthetic transaction times for carriage rule compliance calculations across different UK regional shipping zones and product group matrices (Target SLA: ≤ 1,200 ms).")
+
+    try:
+        with get_db_connection() as conn:
+            df_carriage = pd.read_sql_query("SELECT * FROM carriage_benchmark_logs ORDER BY recorded_at DESC;", conn)
+    except Exception:
+        df_carriage = pd.DataFrame()
+
+    if df_carriage.empty:
+        st.info("No synthetic regional carriage benchmark logs found. Initialize the `carriage_benchmark_logs` table and execute test routines.")
+    else:
+        avg_carriage_time = df_carriage["calculation_duration_ms"].mean()
+        sla_pass_rate = (len(df_carriage[df_carriage["calculation_duration_ms"] <= 1200]) / len(df_carriage)) * 100
+
+        rc1, rc2, rc3 = st.columns(3)
+        rc1.metric("Mean Calculation Latency", f"{avg_carriage_time:.0f} ms", delta="Target: ≤ 1,200 ms", delta_color="normal" if avg_carriage_time <= 1200 else "inverse")
+        rc2.metric("SLA Adherence Rate", f"{sla_pass_rate:.1f}%")
+        rc3.metric("Total Regions Tested", len(df_carriage["region_name"].unique()))
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.dataframe(df_carriage, use_container_width=True)
