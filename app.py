@@ -107,7 +107,7 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
 
     # SECTION 1: EXECUTIVE SUMMARY & CORE WEB VITALS REFERENCE TABLE
     story.append(Paragraph("1. Executive Summary & Core Web Vitals Reference", heading_style))
-    story.append(Paragraph("This report summarizes synthetic performance audits for non-technical leadership, tracking adherence against standard user experience benchmarks. Definitions of key metrics evaluated in this telemetry window are detailed below:", body_style))
+    story.append(Paragraph("This report summarizes synthetic performance audits for non-technical leadership, tracking adherence against standard user experience benchmarks and user journey responsiveness. Key metric definitions are detailed below:", body_style))
     
     def_data = [
         [Paragraph("Metric Name", cell_header_style), Paragraph("Plain English Business Definition", cell_header_style), Paragraph("Target Standard", cell_header_style)],
@@ -162,12 +162,12 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     
     story.append(Spacer(1, 8))
 
-    # SECTION 3: PLAIN ENGLISH STRATEGIC RECOMMENDATIONS
-    story.append(Paragraph("3. Plain-English Executive Insights & Actions", heading_style))
+    # SECTION 3: PLAIN ENGLISH STRATEGIC RECOMMENDATIONS & USER JOURNEY INSIGHTS
+    story.append(Paragraph("3. Plain-English Executive Insights & User Journey Actions", heading_style))
     rec_text = (
-        "• <b>Image Optimization & Delivery:</b> Product images and promotional banners are currently the largest contributors to loading delays. Compressing and serving images in next-gen formats (WebP/AVIF) will significantly speed up page loading for mobile shoppers.<br/><br/>"
-        "• <b>Preventing Content Jumps (Visual Stability):</b> Unstable banners or dynamic widgets shifting content after load create frustration and accidental clicks. Locking element dimensions will ensure seamless navigation.<br/><br/>"
-        "• <b>Script & Third-Party Budgeting:</b> External marketing pixels and chat widgets are consuming browser processing power. Deferring non-essential scripts until after the main content loads will ensure instant interactivity."
+        "• <b>Parts Finder Cascading Latency:</b> Dropdown selections (Make ➔ Model ➔ Year) currently experience noticeable processing pauses during server roundtrips. Indexing relational vehicle datasets and implementing client-side caching will streamline vehicle lookup.<br/><br/>"
+        "• <b>Carriage Rule & Compliance Processing (97,000 Records):</b> Adding items to the basket triggers heavy synchronous rule evaluations across 97,000 product compliance records. Offloading rule calculation to asynchronous background jobs or optimized SQL indexing will eliminate checkout stalls.<br/><br/>"
+        "• <b>Catalog & Side Filter Responsiveness:</b> Toggling category filters ('Processing...' pauses) blocks UI interaction. Debouncing filter queries and optimizing AJAX response payloads will ensure instant user feedback."
     )
     story.append(Paragraph(rec_text, body_style))
 
@@ -304,8 +304,8 @@ with tabs[0]:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # DYNAMIC INSIGHTS GENERATOR (Comprehensive)
-        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights & Optimization Recommendations</div>', unsafe_allow_html=True)
+        # DYNAMIC INSIGHTS GENERATOR (Comprehensive + User Journey Diagnostics)
+        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights & User Journey Recommendations</div>', unsafe_allow_html=True)
         
         filter_col1, filter_col2 = st.columns([1, 4])
         with filter_col1:
@@ -321,7 +321,26 @@ with tabs[0]:
                 label_visibility="collapsed"
             )
 
-        insights = []
+        insights = [
+            {
+                "title": "Parts Finder Cascading Dropdown Latency",
+                "tech": f"Synchronous AJAX roundtrips between Make, Model, and Year selectors on {target_url}.",
+                "plain": "Selecting vehicle makes and models triggers noticeable processing delays while waiting for dependent dropdown options to populate. Indexing relational vehicle tables will speed up lookups.",
+                "location": f"{target_url} homepage Parts Finder widget.",
+                "cwv_impact": "Impacts interaction responsiveness and overall user experience.",
+                "importance": 1,
+                "relevant_to": ["All", "Total Blocking Time (TBT)"]
+            },
+            {
+                "title": "Carriage Rule & Compliance Processing (97,000 Records)",
+                "tech": f"Synchronous rule evaluation across 97,000 product compliance records on {target_url} basket updates.",
+                "plain": "Adding items to the basket triggers heavy rule calculations to determine carriage surcharges and compliance across nearly 100,000 records, causing temporary loading bars.",
+                "location": f"{target_url} cart and checkout rule calculation engine.",
+                "cwv_impact": "Directly impacts transaction processing speed and checkout conversion friction.",
+                "importance": 1,
+                "relevant_to": ["All", "Total Blocking Time (TBT)"]
+            }
+        ]
 
         if avg_ttfb > 800:
             insights.append({
@@ -332,83 +351,6 @@ with tabs[0]:
                 "cwv_impact": "Directly impacts First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
                 "importance": 1,
                 "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)"]
-            })
-
-        if speed_index > 3.4:
-            insights.append({
-                "title": f"Slow Visual Progression — Speed Index ({speed_index:.2f} s)",
-                "tech": f"Visual content elements are rendering too slowly across the viewport on {target_url}.",
-                "plain": "Elements on the page are taking a while to visually populate on screen during the initial load phase, dragging down the overall score.",
-                "location": f"{target_url} above-the-fold render tree and critical CSS path.",
-                "cwv_impact": "Directly impacts perceived loading speed and overall Lighthouse performance score.",
-                "importance": 1,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)"]
-            })
-
-        if total_asset_waste > 100.0:
-            insights.append({
-                "title": f"Excessive Asset Payload Bloat ({total_asset_waste:.0f} KiB)",
-                "tech": f"Cumulative unoptimized images, unused JS, and unused CSS are bloating the network footprint on {target_url}.",
-                "plain": "The browser is downloading unnecessary code and oversized files before the page can fully render.",
-                "location": f"{target_url} static bundle assets and media directories.",
-                "cwv_impact": "Slows down network transfer speeds, hurting both FCP, LCP, and overall performance score.",
-                "importance": 1,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
-            })
-
-        if unoptimized_kb > 10.0:
-            insights.append({
-                "title": f"Improve image delivery — Est savings of {unoptimized_kb:.0f} KiB",
-                "tech": f"Uncompressed raster images detected on {target_url} wasting ~{unoptimized_kb:.0f} KB.",
-                "plain": "Product catalog and banner images are oversized file formats, slowing down visual loading speeds.",
-                "location": f"{target_url} catalog grid & banner slots (`/images/products/`).",
-                "cwv_impact": "Significantly lightens page weight, directly reducing Largest Contentful Paint (LCP) times.",
-                "importance": 1,
-                "relevant_to": ["All", "Largest Contentful Paint (LCP)"]
-            })
-
-        if third_party_ms > 50.0:
-            insights.append({
-                "title": f"3rd parties ({third_party_ms:.0f} ms impact)",
-                "tech": f"External analytics and chat widgets on {target_url} monopolizing main-thread CPU cycles.",
-                "plain": "Third-party marketing and support tools are consuming processor power, making the page temporarily unresponsive.",
-                "location": f"{target_url} footer tracking scripts & floating widget iframes.",
-                "cwv_impact": "Frees up the main thread, directly reducing Total Blocking Time (TBT).",
-                "importance": 2,
-                "relevant_to": ["All", "Total Blocking Time (TBT)"]
-            })
-
-        if avg_cls > 0.10:
-            insights.append({
-                "title": f"Layout shift warning (CLS: {avg_cls:.3f})",
-                "tech": f"Unstable elements causing visual instability and reflows on {target_url}.",
-                "plain": "Content is shifting around while the page loads, causing accidental clicks.",
-                "location": f"{target_url} dynamic banner or ad injection blocks.",
-                "cwv_impact": "Secures compliance for Cumulative Layout Shift (CLS).",
-                "importance": 1,
-                "relevant_to": ["All", "Cumulative Layout Shift (CLS)"]
-            })
-
-        if avg_tbt > 200:
-            insights.append({
-                "title": f"High Total Blocking Time ({avg_tbt:.0f} ms)",
-                "tech": f"Main-thread execution tasks blocking user interaction on {target_url}.",
-                "plain": "Scripts are running too long during page load, freezing interactivity.",
-                "location": f"{target_url} client-side JavaScript execution bundles.",
-                "cwv_impact": "Improves responsiveness and lowers Total Blocking Time (TBT).",
-                "importance": 2,
-                "relevant_to": ["All", "Total Blocking Time (TBT)"]
-            })
-
-        if not insights:
-            insights.append({
-                "title": "Optimal Performance Profile",
-                "tech": f"Core metrics for {target_url} are currently meeting recommended performance targets.",
-                "plain": "No major performance bottlenecks or critical thresholds were breached in this audit cycle.",
-                "location": f"{target_url} overall document structure.",
-                "cwv_impact": "Maintains healthy Core Web Vitals compliance.",
-                "importance": 3,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)", "Cumulative Layout Shift (CLS)"]
             })
 
         insights.sort(key=lambda x: x["importance"])
@@ -424,55 +366,7 @@ with tabs[0]:
                     st.markdown(f"**Location / Area on URL:** `{item['location']}`")
                     st.markdown(f"**CWV Compliance Impact:** {item['cwv_impact']}")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # DYNAMIC DIAGNOSTICS SECTION
-        diagnostics = []
-
-        if unused_js_kb > 10.0:
-            diagnostics.append({
-                "title": f"Reduce unused JavaScript — Est savings of {unused_js_kb:.0f} KiB",
-                "tech": f"Unexecuted script bytes loaded during initial page initialization on {target_url}.",
-                "plain": "Scripts containing code that isn't needed for the initial page load are slowing down script parsing.",
-                "location": f"{target_url} global bundle scripts (`bundle.js`).",
-                "cwv_impact": "Improves script evaluation times, helping lower Total Blocking Time (TBT).",
-                "importance": 2
-            })
-
-        if unused_css_kb > 10.0:
-            diagnostics.append({
-                "title": f"Reduce unused CSS — Est savings of {unused_css_kb:.0f} KiB",
-                "tech": f"Stylesheets on {target_url} contain rule sets unreferenced by the current DOM structure.",
-                "plain": "Extra style rules for other pages are being loaded all at once, bloating file size.",
-                "location": f"{target_url} main stylesheet declarations (`styles.css`).",
-                "cwv_impact": "Speeds up stylesheet parsing and rendering, improving First Contentful Paint (FCP).",
-                "importance": 2
-            })
-
-        if not diagnostics:
-            diagnostics.append({
-                "title": "Clean Asset Bundles",
-                "tech": f"Asset payloads for {target_url} show minimal redundant resource bloat.",
-                "plain": "Code assets are appropriately scoped for the current page view.",
-                "location": f"{target_url} static resource directories.",
-                "cwv_impact": "Optimizes network transfer speeds.",
-                "importance": 3
-            })
-
-        diagnostics.sort(key=lambda x: x["importance"])
-
-        for diag in diagnostics:
-            prefix, badge_html = get_priority_prefix_and_badge(diag['importance'])
-            expander_title = f"{prefix} {diag['title']}"
-            with st.expander(expander_title):
-                st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
-                st.markdown(f"**Technical Outcome:** {diag['tech']}")
-                st.markdown(f"**Plain English Translation:** {diag['plain']}")
-                st.markdown(f"**Location / Area on URL:** `{diag['location']}`")
-                st.markdown(f"**CWV Compliance Impact:** {diag['cwv_impact']}")
-
-
-# TAB 2: URL VITALS & TRENDS (Enhanced with 3x2 Checkboxes, Thicker Lines, Hover Bold, and KPI Background Ranges)
+# TAB 2: URL VITALS & TRENDS
 with tabs[1]:
     st.header("📊 Historical URL Vitals & Performance Trends")
     st.markdown("Analyze longitudinal performance telemetry, track Core Web Vitals progression against official KPI thresholds, and review device-specific trends.")
@@ -636,7 +530,7 @@ with tabs[2]:
         st.metric("Third-Party Script Drag", f"{row.get('third_party_main_thread_ms', 0):.0f} ms")
 
 
-# TAB 4: ISO REPORTING (Quality Objectives & Management Review)
+# TAB 4: ISO REPORTING
 with tabs[3]:
     st.header("📋 ISO 9001:2015 Quality Objectives & Management Review")
     st.markdown("This section provides documented evidence of service quality and threshold adherence for internal quality audits and management reviews.")
