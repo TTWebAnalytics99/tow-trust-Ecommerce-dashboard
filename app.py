@@ -514,8 +514,14 @@ with tabs[1]:
 
                     fig.update_layout(
                         hovermode="closest",
-                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                        margin=dict(l=20, r=20, t=60, b=20),
+                        legend=dict(
+                            orientation="h", 
+                            yanchor="bottom", 
+                            y=-0.3, # Position legend comfortably below chart to prevent any text overlapping
+                            xanchor="center", 
+                            x=0.5
+                        ),
+                        margin=dict(l=20, r=20, t=80, b=50), # Generous top and bottom margins
                         xaxis=dict(showgrid=True, gridcolor="#f1f3f4"),
                         yaxis=dict(showgrid=True, gridcolor="#f1f3f4")
                     )
