@@ -660,7 +660,7 @@ with tabs[3]:
 
 
 # TAB 5: ADVANCED REPORTING & EXPORT CENTER
-tab_idx_reporting = 4 if not is_admin else 4 # adjust based on tab count
+tab_idx_reporting = 4 if not is_admin else 4
 with tabs[tab_idx_reporting]:
     st.header("📈 Advanced Reporting & Multi-Format Export Center")
     st.markdown("Generate plain-English executive summary PDF reports or export structured raw telemetry datasets formatted for Power BI and Excel.")
@@ -706,8 +706,16 @@ with tabs[tab_idx_reporting]:
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    df_filtered_export.to_excel(writer, sheet_name='Performance Telemetry', index=False)
-                    df_export_all.to_excel(writer, sheet_name='All Environments Summary', index=False)
+                    df_filtered_export_clean = df_filtered_export.copy()
+                    df_export_all_clean = df_export_all.copy()
+                    
+                    for col in df_filtered_export_clean.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
+                        df_filtered_export_clean[col] = df_filtered_export_clean[col].dt.tz_localize(None)
+                    for col in df_export_all_clean.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
+                        df_export_all_clean[col] = df_export_all_clean[col].dt.tz_localize(None)
+
+                    df_filtered_export_clean.to_excel(writer, sheet_name='Performance Telemetry', index=False)
+                    df_export_all_clean.to_excel(writer, sheet_name='All Environments Summary', index=False)
                 excel_data = output.getvalue()
 
                 st.download_button(
