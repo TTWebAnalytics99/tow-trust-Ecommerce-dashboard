@@ -1,36 +1,31 @@
-name: CWV Automated Audit Scheduler
-
-on:
-  schedule:
-    # Runs every 2 hours automatically
-    - cron: '0 */2 * * *'
-  workflow_dispatch:
-
-jobs:
-  run-audits:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: pip install requests psycopg2-binary
-
-      - name: Run Live Environment Audit
+- name: Run Live Environment Audit (Desktop)
         env:
           DATABASE_URL: ${{ secrets.LIVE_DATABASE_URL }}
           PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
           TARGET_URL: "https://tow-trust.co.uk"
+          AUDIT_STRATEGY: "desktop"
         run: python run_audit.py
 
-      - name: Run Sandbox Environment Audit
+      - name: Run Live Environment Audit (Mobile)
+        env:
+          DATABASE_URL: ${{ secrets.LIVE_DATABASE_URL }}
+          PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+          TARGET_URL: "https://tow-trust.co.uk"
+          AUDIT_STRATEGY: "mobile"
+        run: python run_audit.py
+
+      - name: Run Sandbox Environment Audit (Desktop)
         env:
           DATABASE_URL: ${{ secrets.SANDBOX_DATABASE_URL }}
           PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
           TARGET_URL: "https://towtrust.cloudfyuat.com"
+          AUDIT_STRATEGY: "desktop"
+        run: python run_audit.py
+
+      - name: Run Sandbox Environment Audit (Mobile)
+        env:
+          DATABASE_URL: ${{ secrets.SANDBOX_DATABASE_URL }}
+          PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+          TARGET_URL: "https://towtrust.cloudfyuat.com"
+          AUDIT_STRATEGY: "mobile"
         run: python run_audit.py
