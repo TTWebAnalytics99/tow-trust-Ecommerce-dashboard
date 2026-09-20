@@ -178,11 +178,11 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     buffer.seek(0)
     return buffer.getvalue()
 
-# STREAMLINED 3-TAB LAYOUT
+# STREAMLINED 3-TAB LAYOUT (Tab 2: Basket Testing, Tab 3: Advanced Reporting)
 tabs = st.tabs([
     "📑 Executive Briefing", 
-    "📈 Advanced Reporting & ISO Export Hub", 
-    "🛒 Basket Checkout & Carriage Testing"
+    "🛒 Basket Checkout & Carriage Testing",
+    "📈 Advanced Reporting & ISO Export Hub"
 ])
 
 # TAB 1: EXECUTIVE BRIEFING
@@ -321,8 +321,38 @@ with tabs[0]:
                 st.markdown(f"**Location on URL:** `{item['location']}`")
 
 
-# TAB 2: ADVANCED REPORTING & ISO EXPORT HUB
+# TAB 2: BASKET CHECKOUT & CARRIAGE TESTING
 with tabs[1]:
+    st.header("🛒 Basket Checkout & Carriage Testing (93,726 Rules Matrix)")
+    st.markdown("Monitor synthetic transaction times for carriage rule compliance calculations across your complete UK regional shipping zones and product group matrices (Target SLA: ≤ 1,200 ms).")
+
+    try:
+        with get_db_connection() as conn:
+            df_carriage = pd.read_sql_query("SELECT * FROM carriage_benchmark_logs ORDER BY recorded_at DESC;", conn)
+    except Exception:
+        df_carriage = pd.DataFrame()
+
+    if df_carriage.empty:
+        st.info("No synthetic regional carriage benchmark logs found. Initialize the `carriage_benchmark_logs` table and execute test routines.")
+    else:
+        avg_carriage_time = df_carriage["calculation_duration_ms"].mean()
+        sla_pass_rate = (len(df_carriage[df_carriage["calculation_duration_ms"] <= 1200]) / len(df_carriage)) * 100
+
+        rc1, rc2, rc3 = st.columns(3)
+        rc1.metric("Mean Carriage Calculation Latency", f"{avg_carriage_time:.0f} ms", delta="Target: ≤ 1,200 ms", delta_color="normal" if avg_carriage_time <= 1200 else "inverse")
+        rc2.metric("SLA Adherence Rate", f"{sla_pass_rate:.1f}%")
+        rc3.metric("Total Regional SKU Tests", len(df_carriage))
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### Regional & Product Group SLA Compliance Matrix")
+        st.dataframe(df_carriage, use_container_width=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.info("💡 **ISP Technical Summary:** The 93,726-row delivery charges matrix requires compound indexing on `Postal District`, `Group Name`, and `Display Label`. Without indexes, rule lookups result in sequential table scans that exceed the 1.2s SLA during peak basket updates.")
+
+
+# TAB 3: ADVANCED REPORTING & ISO EXPORT HUB
+with tabs[2]:
     st.header("📈 Advanced Reporting & ISO 9001:2015 Quality Management Hub")
     st.markdown("Consolidated hub for longitudinal trend analysis, ISO quality objective adherence tracking (Clause 9.1), executive PDF generation, and Power BI/Excel exports.")
 
@@ -419,33 +449,3 @@ with tabs[1]:
             st.markdown("<br>", unsafe_allow_html=True)
             with st.expander("📋 View Underlying ISO Quality Audit Records Table"):
                 st.dataframe(df_hub, use_container_width=True)
-
-
-# TAB 3: BASKET CHECKOUT & CARRIAGE TESTING
-with tabs[2]:
-    st.header("🛒 Basket Checkout & Carriage Testing (93,726 Rules Matrix)")
-    st.markdown("Monitor synthetic transaction times for carriage rule compliance calculations across your complete UK regional shipping zones and product group matrices (Target SLA: ≤ 1,200 ms).")
-
-    try:
-        with get_db_connection() as conn:
-            df_carriage = pd.read_sql_query("SELECT * FROM carriage_benchmark_logs ORDER BY recorded_at DESC;", conn)
-    except Exception:
-        df_carriage = pd.DataFrame()
-
-    if df_carriage.empty:
-        st.info("No synthetic regional carriage benchmark logs found. Initialize the `carriage_benchmark_logs` table and execute test routines.")
-    else:
-        avg_carriage_time = df_carriage["calculation_duration_ms"].mean()
-        sla_pass_rate = (len(df_carriage[df_carriage["calculation_duration_ms"] <= 1200]) / len(df_carriage)) * 100
-
-        rc1, rc2, rc3 = st.columns(3)
-        rc1.metric("Mean Carriage Calculation Latency", f"{avg_carriage_time:.0f} ms", delta="Target: ≤ 1,200 ms", delta_color="normal" if avg_carriage_time <= 1200 else "inverse")
-        rc2.metric("SLA Adherence Rate", f"{sla_pass_rate:.1f}%")
-        rc3.metric("Total Regional SKU Tests", len(df_carriage))
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### Regional & Product Group SLA Compliance Matrix")
-        st.dataframe(df_carriage, use_container_width=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.info("💡 **ISP Technical Summary:** The 93,726-row delivery charges matrix requires compound indexing on `Postal District`, `Group Name`, and `Display Label`. Without indexes, rule lookups result in sequential table scans that exceed the 1.2s SLA during peak basket updates.")
