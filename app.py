@@ -9,7 +9,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-st.set_page_config(page_title="TT SWPTA", layout="wide")
+st.set_page_config(page_title="TT SWPTA - Enterprise Edition", layout="wide")
 
 DB_URI = st.secrets.get("DATABASE_URL") or os.getenv("DATABASE_URL")
 API_KEY = st.secrets.get("PAGESPEED_API_KEY") or os.getenv("PAGESPEED_API_KEY", "")
@@ -40,7 +40,7 @@ def authenticate():
             st.session_state["auth_ok"] = False
 
     if not st.session_state.get("auth_ok", False):
-        st.subheader("🔒 Tow-Trust ECommerce Web Performance and Synthetic Testing Application")
+        st.subheader("🔒 Tow-Trust ECommerce Web Performance and Carriage Intelligence Platform")
         st.text_input("Enter Passkey", type="password", key="pass_input", on_change=check)
         if st.session_state.get("auth_ok") is False:
             st.error("Invalid credentials.")
@@ -102,12 +102,12 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#3c4043'), leading=10)
     cell_header_style = ParagraphStyle('CellHeader', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#174ea6'), fontName='Helvetica-Bold', leading=10)
 
-    story.append(Paragraph("Tow-Trust ECommerce Performance & ISP Technical Briefing", title_style))
+    story.append(Paragraph("Tow-Trust ECommerce Performance & ISO Quality Review Report", title_style))
     story.append(Paragraph(f"Environment: <b>{target_url}</b> | Form Factor: <b>{strategy.capitalize()}</b> | Telemetry Window: <b>{time_range_label}</b>", sub_style))
 
     # SECTION 1: EXECUTIVE SUMMARY & CORE WEB VITALS REFERENCE TABLE
-    story.append(Paragraph("1. Executive Summary & Core Web Vitals Reference", heading_style))
-    story.append(Paragraph("This report summarizes synthetic performance audits for leadership and technical infrastructure review, tracking adherence against user experience benchmarks and user journey responsiveness.", body_style))
+    story.append(Paragraph("1. Executive Summary & ISO 9001 Quality Objectives", heading_style))
+    story.append(Paragraph("This report summarizes synthetic performance audits and quality objective adherence (ISO 9001:2015 Clause 9.1) for leadership review, tracking user experience benchmarks and user journey responsiveness.", body_style))
     
     def_data = [
         [Paragraph("Metric Name", cell_header_style), Paragraph("Plain English Business Definition", cell_header_style), Paragraph("Target Standard", cell_header_style)],
@@ -129,7 +129,7 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     story.append(Spacer(1, 6))
 
     # SECTION 2: HISTORICAL METRICS SUMMARY
-    story.append(Paragraph("2. Historical Performance & Compliance Summary", heading_style))
+    story.append(Paragraph("2. Historical Performance & Quality Adherence Summary", heading_style))
     if not df_target.empty:
         mean_score = df_target["perf_score"].mean()
         mean_lcp = df_target["lcp_ms"].mean() / 1000.0
@@ -162,18 +162,15 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     
     story.append(Spacer(1, 6))
 
-    # SECTION 3: COMPREHENSIVE ISP TECHNICAL BRIEFING
+    # SECTION 3: TECHNICAL & ISP BRIEFING
     story.append(Paragraph("3. Technical Deep-Dive & ISP Infrastructure Briefing", heading_style))
     isp_text = (
         "<b>A. Carriage Rule Calculation Engine (93,726-Row Matrix):</b><br/>"
-        "• <i>Technical Bottleneck:</i> Basket updates and checkout postcode entry evaluate complex shipping rules across 93,726 active rule records, factoring in carrier tiers, product group tags (e.g., White Products, Box Charges), and weight thresholds.<br/>"
-        "• <i>ISP Action Required:</i> Ensure compound SQL indexing on `(Postal District, Group Name, Display Label)` and implement query-result caching in Redis/Memcached to prevent redundant full-table sequential scans during cart modifications.<br/><br/>"
-        "<b>B. Parts Finder Cascading Dropdowns:</b><br/>"
-        "• <i>Technical Bottleneck:</i> Selecting vehicle makes, models, and years triggers synchronous AJAX database roundtrips for dependent options.<br/>"
-        "• <i>ISP Action Required:</i> Preload serialized vehicle taxonomy JSON structures client-side or implement edge caching to eliminate server roundtrip latency during vehicle selection.<br/><br/>"
-        "<b>C. Catalog & Side Filter Responsiveness:</b><br/>"
-        "• <i>Technical Bottleneck:</i> Frequent 'Processing...' pauses occur when filtering category attributes.<br/>"
-        "• <i>ISP Action Required:</i> Apply input debouncing on side filter checkboxes and paginate DOM rendering to reduce main-thread CPU overhead."
+        "• <i>Technical Bottleneck:</i> Basket updates evaluate shipping rules across 93,726 active rule records, factoring in carrier tiers and product groups.<br/>"
+        "• <i>ISP Action Required:</i> Ensure compound SQL indexing on `(Postal District, Group Name, Display Label)` and query-result caching in Redis/Memcached.<br/><br/>"
+        "<b>B. Parts Finder Cascading Dropdowns & Side Filters:</b><br/>"
+        "• <i>Technical Bottleneck:</i> Relational make/model/year queries cause server roundtrip delays; category filters trigger processing pauses.<br/>"
+        "• <i>ISP Action Required:</i> Preload serialized vehicle taxonomy JSON client-side and apply input debouncing on side filter checkboxes."
     )
     story.append(Paragraph(isp_text, body_style))
 
@@ -181,14 +178,12 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     buffer.seek(0)
     return buffer.getvalue()
 
-is_admin = st.session_state.get("role") == "admin"
-
-if is_admin:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "📈 Advanced Reporting", "⚙️ Custom URL Testing", "🛒 Basket Checkout & Carriage Testing"]
-else:
-    tab_titles = ["📑 Executive Briefing", "📊 URL Vitals & Trends", "🎨 Asset Bottlenecks", "📋 ISO Reporting", "📈 Advanced Reporting", "🛒 Basket Checkout & Carriage Testing"]
-
-tabs = st.tabs(tab_titles)
+# STREAMLINED 3-TAB LAYOUT
+tabs = st.tabs([
+    "📑 Executive Briefing", 
+    "📈 Advanced Reporting & ISO Export Hub", 
+    "🛒 Basket Checkout & Carriage Testing"
+])
 
 # TAB 1: EXECUTIVE BRIEFING
 with tabs[0]:
@@ -254,7 +249,7 @@ with tabs[0]:
         url_bar_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,28,64,0.08);"><div><span style="font-size: 12px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: 0.8px;">PageSpeed Insights Audit URL</span><div style="font-size: 18px; font-weight: 400; color: #1a73e8; margin-top: 2px; word-break: break-all;"><a href="{target_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">{target_url}</a></div></div><div style="background-color: #f1f3f4; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; color: #3c4043; text-transform: capitalize;">💻 Form Factor: {audit_strategy}</div></div>'
         st.markdown(url_bar_html, unsafe_allow_html=True)
 
-        meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {str(audit_strategy).capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div><div style="display: flex; align-items: center; gap: 8px;">⏱️ <span>Initial page load</span></div><div style="display: flex; align-items: center; gap: 8px;">📶 <span>Custom throttling</span></div><div style="display: flex; align-items: center; gap: 8px;">🌐 <span>Using HeadlessChromium 151.0.7922.173</span></div></div>'
+        meta_bar_html = f'<div style="background-color: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: #5f6368;"><div style="display: flex; align-items: center; gap: 8px;">📅 <span>Captured at {recorded_time}</span></div><div style="display: flex; align-items: center; gap: 8px;">💻 <span>Emulated {str(audit_strategy).capitalize()} with Lighthouse 13.4.1</span></div><div style="display: flex; align-items: center; gap: 8px;">🔗 <span>Single page session</span></div></div>'
         st.markdown(meta_bar_html, unsafe_allow_html=True)
 
         executive_summary = f'<div style="background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 16px; border-radius: 4px; margin-bottom: 24px; color: #174ea6;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Executive Summary & Health Status</div><div style="font-size: 13px; line-height: 1.5;">The current performance score for environment <code>{target_url}</code> is <strong>{perf_score}/100 (Grade {current_letter})</strong>. Addressing all Level 1 and Level 2 priority insights is projected to lift performance to an estimated <strong>{estimated_optimized_score}/100 (Grade {estimated_letter})</strong>.</div></div>'
@@ -263,7 +258,7 @@ with tabs[0]:
         col_gauge, col_metrics = st.columns([1, 2.5])
         
         with col_gauge:
-            gauge_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 24px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;"><div style="font-size: 13px; font-weight: 600; color: #5f6368; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div><div style="display: flex; gap: 16px; justify-content: center; align-items: center; margin-bottom: 12px;"><div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">CURRENT</div><div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {score_color}; background-color: {score_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;"><span style="font-size: 26px; font-weight: 700; color: {score_color}; line-height: 1;">{perf_score}</span><span style="font-size: 12px; font-weight: 700; color: {score_color}; margin-top: 2px;">Grade {current_letter}</span></div></div><div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">EST. OPTIMIZED</div><div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {est_color}; background-color: {est_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;"><span style="font-size: 26px; font-weight: 700; color: {est_color}; line-height: 1;">{estimated_optimized_score}</span><span style="font-size: 12px; font-weight: 700; color: {est_color}; margin-top: 2px;">Grade {estimated_letter}</span></div></div></div><div style="font-size: 11px; color: #5f6368; border-top: 1px solid #e8eaed; padding-top: 8px; width: 100%; margin-bottom: 10px;">Estimated score if all Level 1 & 2 fixes are resolved.</div><div style="display: flex; justify-content: space-around; width: 100%; font-size: 11px; color: #5f6368; border-top: 1px dashed #dadce0; padding-top: 8px;"><div style="display: flex; align-items: center; gap: 4px;"><span style="color: #ff4e42; font-weight: bold;">▲</span> <span>0–49</span></div><div style="display: flex; align-items: center; gap: 4px;"><span style="color: #ffa400; font-weight: bold;">■</span> <span>50–89</span></div><div style="display: flex; align-items: center; gap: 4px;"><span style="color: #0cce6b; font-weight: bold;">●</span> <span>90–100</span></div></div></div>'
+            gauge_html = f'<div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 24px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;"><div style="font-size: 13px; font-weight: 600; color: #5f6368; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Score</div><div style="display: flex; gap: 16px; justify-content: center; align-items: center; margin-bottom: 12px;"><div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">CURRENT</div><div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {score_color}; background-color: {score_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;"><span style="font-size: 26px; font-weight: 700; color: {score_color}; line-height: 1;">{perf_score}</span><span style="font-size: 12px; font-weight: 700; color: {score_color}; margin-top: 2px;">Grade {current_letter}</span></div></div><div><div style="font-size: 11px; color: #5f6368; margin-bottom: 4px; font-weight: 500;">EST. OPTIMIZED</div><div style="width: 85px; height: 85px; border-radius: 50%; border: 6px solid {est_color}; background-color: {est_bg}; display: flex; flex-direction: column; align-items: center; justify-content: center;"><span style="font-size: 26px; font-weight: 700; color: {est_color}; line-height: 1;">{estimated_optimized_score}</span><span style="font-size: 12px; font-weight: 700; color: {est_color}; margin-top: 2px;">Grade {estimated_letter}</span></div></div></div></div>'
             st.markdown(gauge_html, unsafe_allow_html=True)
 
         with col_metrics:
@@ -274,58 +269,31 @@ with tabs[0]:
 
             with r1c1:
                 with st.container(border=True):
-                    st.markdown("⭐ **Largest Contentful Paint (CWV)**")
-                    lcp_delta = "Target: ≤ 2.5s" if avg_lcp <= 2.5 else "Target: ≤ 2.5s (Exceeded)"
-                    st.metric(label="Main Content Load Speed", value=f"{avg_lcp:.2f} s", delta=lcp_delta, delta_color="normal" if avg_lcp <= 2.5 else "inverse")
-
+                    st.markdown("⭐ **Largest Contentful Paint**")
+                    st.metric(label="Main Content Load", value=f"{avg_lcp:.2f} s", delta="Target: ≤ 2.5s" if avg_lcp <= 2.5 else "Exceeded", delta_color="normal" if avg_lcp <= 2.5 else "inverse")
             with r1c2:
                 with st.container(border=True):
-                    st.markdown("⭐ **Total Blocking Time (CWV)**")
-                    tbt_delta = "Target: ≤ 200ms" if avg_tbt <= 200 else "Target: ≤ 200ms (Exceeded)"
-                    st.metric(label="Interactivity Freeze Delay", value=f"{avg_tbt:.0f} ms", delta=tbt_delta, delta_color="normal" if avg_tbt <= 200 else "inverse")
-
+                    st.markdown("⭐ **Total Blocking Time**")
+                    st.metric(label="Interactivity Delay", value=f"{avg_tbt:.0f} ms", delta="Target: ≤ 200ms" if avg_tbt <= 200 else "Exceeded", delta_color="normal" if avg_tbt <= 200 else "inverse")
             with r1c3:
                 with st.container(border=True):
-                    st.markdown("⭐ **Cumulative Layout Shift (CWV)**")
-                    cls_delta = "Target: ≤ 0.10" if avg_cls <= 0.10 else "Target: ≤ 0.10 (Exceeded)"
-                    st.metric(label="Visual Stability / Jumping", value=f"{avg_cls:.3f}", delta=cls_delta, delta_color="normal" if avg_cls <= 0.10 else "inverse")
-
+                    st.markdown("⭐ **Cumulative Layout Shift**")
+                    st.metric(label="Visual Stability", value=f"{avg_cls:.3f}", delta="Target: ≤ 0.10" if avg_cls <= 0.10 else "Exceeded", delta_color="normal" if avg_cls <= 0.10 else "inverse")
             with r2c1:
                 with st.container(border=True):
-                    st.markdown("**Server Response Time**")
-                    ttfb_delta = "Target: ≤ 800ms" if avg_ttfb <= 800 else "Target: ≤ 800ms (Exceeded)"
-                    st.metric(label="Initial Server Handshake", value=f"{avg_ttfb:.0f} ms", delta=ttfb_delta, delta_color="normal" if avg_ttfb <= 800 else "inverse")
-
+                    st.markdown("**Server Response (TTFB)**")
+                    st.metric(label="Initial Handshake", value=f"{avg_ttfb:.0f} ms", delta="Target: ≤ 800ms" if avg_ttfb <= 800 else "Exceeded", delta_color="normal" if avg_ttfb <= 800 else "inverse")
             with r2c2:
                 with st.container(border=True):
                     st.markdown("**Speed Index**")
-                    si_delta = "Target: ≤ 3.4s" if speed_index <= 3.4 else "Target: ≤ 3.4s (Exceeded)"
-                    st.metric(label="Visual Progress Pace", value=f"{speed_index:.2f} s", delta=si_delta, delta_color="normal" if speed_index <= 3.4 else "inverse")
-
+                    st.metric(label="Visual Progress", value=f"{speed_index:.2f} s", delta="Target: ≤ 3.4s" if speed_index <= 3.4 else "Exceeded", delta_color="normal" if speed_index <= 3.4 else "inverse")
             with r2c3:
                 with st.container(border=True):
-                    st.markdown("**Unoptimized Asset Waste**")
-                    waste_delta = "Target: Minimal Bloat" if total_asset_waste <= 50 else "Target: Minimal Bloat (High)"
-                    st.metric(label="Unused JS/CSS & Images", value=f"{total_asset_waste:.0f} KB", delta=waste_delta, delta_color="normal" if total_asset_waste <= 50 else "inverse")
+                    st.markdown("**Unoptimized Waste**")
+                    st.metric(label="Unused Assets", value=f"{total_asset_waste:.0f} KB", delta="Target: Minimal", delta_color="normal" if total_asset_waste <= 50 else "inverse")
 
         st.markdown("<br>", unsafe_allow_html=True)
-
-        # DYNAMIC INSIGHTS GENERATOR
-        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Insights & User Journey Recommendations</div>', unsafe_allow_html=True)
-        
-        filter_col1, filter_col2 = st.columns([1, 4])
-        with filter_col1:
-            insight_filter = st.selectbox(
-                "Show audits relevant to:",
-                [
-                    "All",
-                    "First Contentful Paint (FCP)",
-                    "Largest Contentful Paint (LCP)",
-                    "Total Blocking Time (TBT)",
-                    "Cumulative Layout Shift (CLS)"
-                ],
-                label_visibility="collapsed"
-            )
+        st.markdown('<div style="font-size: 16px; font-weight: 600; color: #202124; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">User Journey Bottlenecks & Recommendations</div>', unsafe_allow_html=True)
 
         insights = [
             {
@@ -333,416 +301,128 @@ with tabs[0]:
                 "tech": f"Synchronous AJAX roundtrips between Make, Model, and Year selectors on {target_url}.",
                 "plain": "Selecting vehicle makes and models triggers noticeable processing delays while waiting for dependent dropdown options to populate. Indexing relational vehicle tables will speed up lookups.",
                 "location": f"{target_url} homepage Parts Finder widget.",
-                "cwv_impact": "Impacts interaction responsiveness and overall user experience.",
-                "importance": 1,
-                "relevant_to": ["All", "Total Blocking Time (TBT)"]
+                "importance": 1
             },
             {
                 "title": "Carriage Rule & Compliance Processing (93,726 Rules)",
                 "tech": f"Synchronous rule evaluation across 93,726 carriage and product group records on {target_url} basket updates.",
                 "plain": "Adding items to the basket triggers heavy rule calculations to determine carriage surcharges across nearly 94,000 matrix rules, causing temporary loading bars.",
                 "location": f"{target_url} cart and checkout rule calculation engine.",
-                "cwv_impact": "Directly impacts transaction processing speed and checkout conversion friction.",
-                "importance": 1,
-                "relevant_to": ["All", "Total Blocking Time (TBT)"]
+                "importance": 1
             }
         ]
 
-        if avg_ttfb > 800:
-            insights.append({
-                "title": f"High Server Response Time ({avg_ttfb:.0f} ms)",
-                "tech": f"Initial server response for {target_url} exceeded the recommended 800ms threshold.",
-                "plain": "The server is taking too long to start sending page content back to the visitor's browser.",
-                "location": f"{target_url} server backend response pipeline.",
-                "cwv_impact": "Directly impacts First Contentful Paint (FCP) and Largest Contentful Paint (LCP).",
-                "importance": 1,
-                "relevant_to": ["All", "First Contentful Paint (FCP)", "Largest Contentful Paint (LCP)"]
-            })
-
-        insights.sort(key=lambda x: x["importance"])
-
         for item in insights:
-            if insight_filter in item["relevant_to"]:
-                prefix, badge_html = get_priority_prefix_and_badge(item['importance'])
-                expander_title = f"{prefix} {item['title']}"
-                with st.expander(expander_title):
-                    st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
-                    st.markdown(f"**Technical Outcome:** {item.get('tech')}")
-                    st.markdown(f"**Plain English Translation:** {item['plain']}")
-                    st.markdown(f"**Location / Area on URL:** `{item['location']}`")
-                    st.markdown(f"**CWV Compliance Impact:** {item['cwv_impact']}")
+            prefix, badge_html = get_priority_prefix_and_badge(item['importance'])
+            with st.expander(f"{prefix} {item['title']}"):
+                st.markdown(f"**Importance Rating:** {badge_html}", unsafe_allow_html=True)
+                st.markdown(f"**Technical Outcome:** {item['tech']}")
+                st.markdown(f"**Plain English Translation:** {item['plain']}")
+                st.markdown(f"**Location on URL:** `{item['location']}`")
 
-# TAB 2: URL VITALS & TRENDS
+
+# TAB 2: ADVANCED REPORTING & ISO EXPORT HUB
 with tabs[1]:
-    st.header("📊 Historical URL Vitals & Performance Trends")
-    st.markdown("Analyze longitudinal performance telemetry, track Core Web Vitals progression against official KPI thresholds, and review device-specific trends.")
-
-    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1.5, 2.5, 2])
-
-    with ctrl_col1:
-        hist_strategy = st.radio("Form Factor", ["mobile", "desktop"], horizontal=True, key="hist_strat_radio")
+    st.header("📈 Advanced Reporting & ISO 9001:2015 Quality Management Hub")
+    st.markdown("Consolidated hub for longitudinal trend analysis, ISO quality objective adherence tracking (Clause 9.1), executive PDF generation, and Power BI/Excel exports.")
 
     with get_db_connection() as conn:
-        df_hist_meta = pd.read_sql_query("SELECT DISTINCT target_url FROM web_performance_logs;", conn)
+        df_meta = pd.read_sql_query("SELECT DISTINCT target_url FROM web_performance_logs;", conn)
 
-    if df_hist_meta.empty:
-        st.info("No performance history recorded yet.")
+    if df_meta.empty:
+        st.info("No telemetry records found.")
     else:
-        with ctrl_col2:
-            hist_url = st.selectbox("Target Environment", df_hist_meta["target_url"].unique(), key="hist_url_sel")
+        rep_c1, rep_c2, rep_c3 = st.columns(3)
+        with rep_c1:
+            hub_url = st.selectbox("Target Environment", df_meta["target_url"].unique(), key="hub_url_sel")
+        with rep_c2:
+            hub_strat = st.selectbox("Form Factor Strategy", ["mobile", "desktop"], key="hub_strat_sel")
+        with rep_c3:
+            hub_time = st.selectbox("Telemetry Time Range", ["Last 30 Days", "Last 60 Days", "All Time"], index=0, key="hub_time_sel")
 
-        with ctrl_col3:
-            time_range_option = st.selectbox(
-                "Telemetry Time Range", 
-                ["Last 1 Day", "Last 5 Days", "Last 10 Days", "Last 30 Days", "Last 60 Days", "Last 120 Days", "Last 180 Days+", "All Time"],
-                index=3,
-                key="hist_time_sel"
-            )
-
-        days_map = {
-            "Last 1 Day": 1,
-            "Last 5 Days": 5,
-            "Last 10 Days": 10,
-            "Last 30 Days": 30,
-            "Last 60 Days": 60,
-            "Last 120 Days": 120,
-            "Last 180 Days+": 180,
-            "All Time": 99999
-        }
-        selected_days = days_map.get(time_range_option, 30)
+        days_val = 30 if "30" in hub_time else (60 if "60" in hub_time else 99999)
 
         with get_db_connection() as conn:
-            query = """
-                SELECT * FROM web_performance_logs 
-                WHERE target_url = %s AND strategy = %s 
-                AND recorded_at >= NOW() - INTERVAL '%s days'
-                ORDER BY recorded_at ASC;
-            """
-            df_hist = pd.read_sql_query(query, conn, params=(hist_url, hist_strategy, selected_days))
+            query = "SELECT * FROM web_performance_logs WHERE target_url = %s AND strategy = %s AND recorded_at >= NOW() - INTERVAL '%s days' ORDER BY recorded_at ASC;"
+            df_hub = pd.read_sql_query(query, conn, params=(hub_url, hub_strat, days_val))
 
-        if df_hist.empty:
+        if df_hub.empty:
             with get_db_connection() as conn:
-                fallback_query = "SELECT * FROM web_performance_logs WHERE target_url = %s AND strategy = %s ORDER BY recorded_at ASC;"
-                df_hist = pd.read_sql_query(fallback_query, conn, params=(hist_url, hist_strategy))
+                df_hub = pd.read_sql_query("SELECT * FROM web_performance_logs WHERE target_url = %s AND strategy = %s ORDER BY recorded_at ASC;", conn, params=(hub_url, hub_strat))
 
-        if df_hist.empty:
-            st.warning(f"No records found for {hist_url} ({hist_strategy}) within the selected timeframe.")
-        else:
-            df_hist["recorded_at"] = pd.to_datetime(df_hist["recorded_at"], utc=True)
-            df_hist["recorded_at_uk"] = df_hist["recorded_at"].dt.tz_convert("Europe/London")
+        if not df_hub.empty:
+            df_hub["recorded_at"] = pd.to_datetime(df_hub["recorded_at"], utc=True)
+            df_hub["recorded_at_uk"] = df_hub["recorded_at"].dt.tz_convert("Europe/London")
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("**Select Core Metrics to Plot:**")
-
-            metric_mapping = {
-                "Largest Contentful Paint (LCP)": "lcp_ms",
-                "Total Blocking Time (TBT)": "tbt_ms",
-                "Cumulative Layout Shift (CLS)": "cls",
-                "Server Response Time (TTFB)": "ttfb_ms",
-                "Speed Index": "speed_index_ms",
-                "Performance Score (0-100)": "perf_score"
-            }
-
-            selected_metric_labels = []
-            defaults = ["Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
-
-            row1_cols = st.columns(3)
-            row2_cols = st.columns(3)
-            all_cols = list(row1_cols) + list(row2_cols)
-
-            for i, (label, col_name) in enumerate(metric_mapping.items()):
-                with all_cols[i]:
-                    if st.checkbox(label, value=(label in defaults), key=f"chk_metric_{i}"):
-                        selected_metric_labels.append(label)
+            # ISO 9001 Quality Adherence Metrics Banner
+            total_audits = len(df_hub)
+            passing_audits = len(df_hub[df_hub["perf_score"] >= 50])
+            compliance_rate = (passing_audits / total_audits) * 100 if total_audits > 0 else 0
+            mean_score = df_hub["perf_score"].mean()
 
             st.markdown("<br>", unsafe_allow_html=True)
-
-            kpi_thresholds = {
-                "Largest Contentful Paint (LCP)": (0, 2500, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 2.5s)"),
-                "Total Blocking Time (TBT)": (0, 200, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 200ms)"),
-                "Cumulative Layout Shift (CLS)": (0, 0.10, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 0.10)"),
-                "Server Response Time (TTFB)": (0, 800, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 800ms)"),
-                "Speed Index": (0, 3400, "rgba(12, 206, 107, 0.08)", "Good Target (≤ 3.4s)"),
-                "Performance Score (0-100)": (90, 100, "rgba(12, 206, 107, 0.08)", "Good Target (90–100)")
-            }
-
-            if selected_metric_labels:
-                valid_mappings = {label: col for label, col in metric_mapping.items() if col in df_hist.columns}
-                active_labels = [label for label in selected_metric_labels if label in valid_mappings]
-                plot_columns = [valid_mappings[label] for label in active_labels]
-
-                if plot_columns:
-                    df_plot = df_hist[["recorded_at_uk"] + plot_columns].copy()
-                    rename_dict = {v: k for k, v in valid_mappings.items()}
-                    df_plot = df_plot.rename(columns=rename_dict)
-
-                    fig = px.line(
-                        df_plot, 
-                        x="recorded_at_uk", 
-                        y=active_labels,
-                        title=f"Trend Analysis for {hist_url} ({hist_strategy.capitalize()})",
-                        labels={"recorded_at_uk": "Timestamp (UK Time)", "value": "Metric Value", "variable": "Core Web Vital / Driver"}
-                    )
-
-                    fig.update_traces(
-                        line=dict(width=3),
-                        hovertemplate="<b>%{y:.2f}</b><br>%{x}<extra>%{fullData.name}</extra>"
-                    )
-
-                    if len(active_labels) == 1:
-                        single_label = active_labels[0]
-                        if single_label in kpi_thresholds:
-                            ymin, ymax, bg_color, annotation_text = kpi_thresholds[single_label]
-                            fig.add_hrect(
-                                y0=ymin, y1=ymax, 
-                                fillcolor=bg_color, 
-                                layer="below", 
-                                line_width=0,
-                                annotation_text=annotation_text, 
-                                annotation_position="top left",
-                                annotation=dict(font_size=10, font_color="#5f6368")
-                            )
-
-                    fig.update_layout(
-                        hovermode="closest",
-                        legend=dict(
-                            orientation="h", 
-                            yanchor="bottom", 
-                            y=-0.4, 
-                            xanchor="center", 
-                            x=0.5
-                        ),
-                        margin=dict(l=20, r=20, t=80, b=70),
-                        xaxis=dict(showgrid=True, gridcolor="#f1f3f4"),
-                        yaxis=dict(showgrid=True, gridcolor="#f1f3f4")
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.warning("Selected metrics are not available in the database schema.")
-
-            with st.expander("📋 View Underlying Telemetry Data Table"):
-                st.dataframe(df_hist, use_container_width=True)
-
-
-# TAB 3: ASSET BOTTLENECKS
-with tabs[2]:
-    st.header("🎨 Asset & Resource Bottlenecks")
-    with get_db_connection() as conn:
-        df_code = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at DESC LIMIT 1;", conn)
-    if not df_code.empty:
-        row = df_code.iloc[0]
-        st.metric("Unoptimized Image Waste", f"{row.get('unoptimized_images_kb', 0):.1f} KB")
-        st.metric("Unused CSS Payload", f"{row.get('unused_css_kb', 0):.1f} KB")
-        st.metric("Third-Party Script Drag", f"{row.get('third_party_main_thread_ms', 0):.0f} ms")
-
-
-# TAB 4: ISO REPORTING
-with tabs[3]:
-    st.header("📋 ISO 9001:2015 Quality Objectives & Management Review")
-    st.markdown("This section provides documented evidence of service quality and threshold adherence for internal quality audits and management reviews.")
-    
-    with get_db_connection() as conn:
-        df_all = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at ASC;", conn)
-
-    if not df_all.empty:
-        selected_iso_url = st.selectbox("Select Target URL for Compliance Report", df_all["target_url"].unique(), key="iso_url_sel")
-        df_url_iso = df_all[df_all["target_url"] == selected_iso_url]
-
-        total_audits = len(df_url_iso)
-        if total_audits > 0:
-            passing_audits = len(df_url_iso[df_url_iso["perf_score"] >= 50])
-            compliance_rate = (passing_audits / total_audits) * 100
-            avg_perf = df_url_iso["perf_score"].mean()
-            avg_lcp_val = df_url_iso["lcp_ms"].mean() / 1000.0
-            
-            col_q1, col_q2, col_q3 = st.columns(3)
-            col_q1.metric("Quality Target Adherence", f"{compliance_rate:.1f}%", help="Percentage of audits meeting acceptable score threshold (>= 50)")
-            col_q2.metric("Mean Performance Score", f"{avg_perf:.1f} / 100")
-            col_q3.metric("Mean LCP Latency", f"{avg_lcp_val:.2f} s")
-            
+            iq1, iq2, iq3 = st.columns(3)
+            iq1.metric("ISO Quality Adherence (Clause 9.1)", f"{compliance_rate:.1f}%", help="Percentage of audits meeting acceptable performance score threshold (>= 50)")
+            iq2.metric("Mean Performance Score", f"{mean_score:.1f} / 100")
+            iq3.metric("Total Quality Audits Logged", total_audits)
             st.markdown("<br>", unsafe_allow_html=True)
-            
-            csv_data = df_url_iso.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="📥 Download ISO Quality Audit Log (CSV)",
-                data=csv_data,
-                file_name=f"iso_9001_performance_audit_log_{selected_iso_url.replace('https://', '').replace('/', '_')}.csv",
-                mime="text/csv",
-                help="Export immutable telemetry history for quality management records."
+
+            # Trend Analysis Chart
+            st.markdown("### Longitudinal Performance Trends")
+            fig = px.line(
+                df_hub, 
+                x="recorded_at_uk", 
+                y=["lcp_ms", "tbt_ms", "perf_score"],
+                title=f"Performance Trend Analysis for {hub_url} ({hub_strat.capitalize()})",
+                labels={"recorded_at_uk": "Timestamp (UK Time)", "value": "Metric Value", "variable": "Indicator"}
             )
+            fig.update_traces(line=dict(width=3))
+            st.plotly_chart(fig, use_container_width=True)
 
-            st.markdown("### Historical Audit Records")
-            st.dataframe(df_url_iso, use_container_width=True)
-        else:
-            st.info("Insufficient historical data for compliance calculation on this target URL.")
-    else:
-        st.info("No telemetry records found in database.")
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("### Documented Export & Review Center")
+            
+            ex_c1, ex_c2 = st.columns(2)
+            with ex_c1:
+                with st.container(border=True):
+                    st.markdown("#### 📄 Executive PDF Quality Report")
+                    st.markdown("Generate and download a formal management review document for ISO compliance records.")
+                    if st.button("📥 Generate & Download Executive PDF"):
+                        pdf_bytes = generate_pdf_executive_report(df_hub, hub_url, hub_strat, hub_time)
+                        st.download_button(
+                            label="💾 Save PDF Report",
+                            data=pdf_bytes,
+                            file_name=f"iso_executive_performance_report_{hub_url.replace('https://', '').replace('/', '_')}.pdf",
+                            mime="application/pdf"
+                        )
 
-
-# TAB 5: ADVANCED REPORTING & EXPORT CENTER
-tab_idx_reporting = 4 if not is_admin else 4
-with tabs[tab_idx_reporting]:
-    st.header("📈 Advanced Reporting & Multi-Format Export Center")
-    st.markdown("Generate plain-English executive summary PDF reports or export structured raw telemetry datasets formatted for Power BI and Excel.")
-
-    rep_ctrl1, rep_ctrl2, rep_ctrl3 = st.columns([2, 2, 2])
-
-    with get_db_connection() as conn:
-        df_rep_meta = pd.read_sql_query("SELECT DISTINCT target_url FROM web_performance_logs;", conn)
-
-    if df_rep_meta.empty:
-        st.info("No telemetry records found for reporting export.")
-    else:
-        with rep_ctrl1:
-            export_url = st.selectbox("Select Target URL for Export", df_rep_meta["target_url"].unique(), key="rep_url_sel")
-        with rep_ctrl2:
-            export_strategy = st.selectbox("Select Form Factor Strategy", ["mobile", "desktop"], key="rep_strat_sel")
-        with rep_ctrl3:
-            export_time_range = st.selectbox(
-                "Telemetry Time Range", 
-                ["Last 1 Day", "Last 5 Days", "Last 10 Days", "Last 30 Days", "Last 60 Days", "Last 120 Days", "Last 180 Days+", "All Time"],
-                index=3,
-                key="rep_time_sel"
-            )
-
-        export_days_map = {
-            "Last 1 Day": 1,
-            "Last 5 Days": 5,
-            "Last 10 Days": 10,
-            "Last 30 Days": 30,
-            "Last 60 Days": 60,
-            "Last 120 Days": 120,
-            "Last 180 Days+": 180,
-            "All Time": 99999
-        }
-        selected_export_days = export_days_map.get(export_time_range, 30)
-
-        with get_db_connection() as conn:
-            export_query = """
-                SELECT * FROM web_performance_logs 
-                WHERE target_url = %s AND strategy = %s 
-                AND recorded_at >= NOW() - INTERVAL '%s days'
-                ORDER BY recorded_at DESC;
-            """
-            df_filtered_export = pd.read_sql_query(export_query, conn, params=(export_url, export_strategy, selected_export_days))
-
-        if df_filtered_export.empty:
-            with get_db_connection() as conn:
-                fallback_export_query = "SELECT * FROM web_performance_logs WHERE target_url = %s AND strategy = %s ORDER BY recorded_at DESC;"
-                df_filtered_export = pd.read_sql_query(fallback_export_query, conn, params=(export_url, export_strategy))
-
-        with get_db_connection() as conn:
-            df_export_all = pd.read_sql_query("SELECT * FROM web_performance_logs ORDER BY recorded_at DESC;", conn)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        ex_col1, ex_col2 = st.columns(2)
-        
-        with ex_col1:
-            with st.container(border=True):
-                st.markdown("### 📄 Executive & ISP Technical PDF Report")
-                st.markdown(f"Download a professional summary document for **{export_url}** ({export_strategy.capitalize()}, {export_time_range}) complete with plain-English KPI explanations, regional carriage SLAs, and detailed technical infrastructure briefs for your ISP.")
-                
-                if st.button("📥 Generate & Download Executive / ISP PDF"):
-                    pdf_bytes = generate_pdf_executive_report(df_filtered_export, export_url, export_strategy, export_time_range)
-                    st.download_button(
-                        label="💾 Click here to download PDF",
-                        data=pdf_bytes,
-                        file_name=f"executive_isp_performance_report_{export_url.replace('https://', '').replace('/', '_')}_{export_strategy}.pdf",
-                        mime="application/pdf"
-                    )
-
-        with ex_col2:
-            with st.container(border=True):
-                st.markdown("### 📊 Power BI & Excel Data Workbook")
-                st.markdown("Export structured raw telemetry logs, metadata, and audit scores into an Excel workbook (`.xlsx`) filtered by your selected timeframe and form factor, ready for Power BI integration.")
-                
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    df_filtered_export_clean = df_filtered_export.copy()
-                    df_export_all_clean = df_export_all.copy()
+            with ex_c2:
+                with st.container(border=True):
+                    st.markdown("#### 📊 Power BI & Excel Audit Workbook")
+                    st.markdown("Export immutable telemetry and audit logs formatted for Power BI (`.xlsx` with timezone stripping).")
                     
-                    for col in df_filtered_export_clean.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
-                        df_filtered_export_clean[col] = df_filtered_export_clean[col].dt.tz_localize(None)
-                    for col in df_export_all_clean.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
-                        df_export_all_clean[col] = df_export_all_clean[col].dt.tz_localize(None)
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df_clean = df_hub.copy()
+                        for col in df_clean.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
+                            df_clean[col] = df_clean[col].dt.tz_localize(None)
+                        df_clean.to_excel(writer, sheet_name='ISO Quality Audit Log', index=False)
+                    excel_data = output.getvalue()
 
-                    df_filtered_export_clean.to_excel(writer, sheet_name='Filtered Telemetry', index=False)
-                    df_export_all_clean.to_excel(writer, sheet_name='All Environments Summary', index=False)
-                excel_data = output.getvalue()
+                    st.download_button(
+                        label="📥 Download Excel Audit Workbook (.xlsx)",
+                        data=excel_data,
+                        file_name=f"iso_telemetry_audit_log_{hub_url.replace('https://', '').replace('/', '_')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
 
-                st.download_button(
-                    label="📥 Download Excel / Power BI Workbook (.xlsx)",
-                    data=excel_data,
-                    file_name=f"tow_trust_telemetry_powerbi_{export_url.replace('https://', '').replace('/', '_')}_{export_strategy}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-
-# TAB 6: CUSTOM URL TESTING MANAGEMENT (Admin Only)
-if is_admin:
-    with tabs[5]:
-        st.header("⚙️ Custom URL Testing Management")
-        st.markdown("Register, configure, or remove secondary URLs (such as checkout flows and category pages) included in automated audit workflows.")
-        
-        st.subheader("Add or Update Target")
-        with st.form("add_target_form"):
-            new_url = st.text_input("Target URL (must start with https://)", placeholder="https://tow-trust.co.uk/cart")
-            new_env_name = st.text_input("Environment / Page Label", placeholder="Checkout & Cart Flow")
-            new_strategy = st.selectbox("Form Factor Strategy", ["desktop", "mobile"])
-            submit_target = st.form_submit_button("➕ Save Target URL")
-            
-            if submit_target:
-                if new_url.startswith("https://"):
-                    try:
-                        with get_db_connection() as conn:
-                            with conn.cursor() as cur:
-                                cur.execute("""
-                                    INSERT INTO monitored_targets (url, strategy, is_active, environment_name)
-                                    VALUES (%s, %s, TRUE, %s)
-                                    ON CONFLICT (url) DO UPDATE 
-                                    SET is_active = TRUE, strategy = EXCLUDED.strategy, environment_name = EXCLUDED.environment_name;
-                                """, (new_url, new_strategy, new_env_name))
-                                conn.commit()
-                        st.success(f"Successfully registered/updated target: {new_url}")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Database error saving target: {e}")
-                else:
-                    st.warning("URL must be valid and start with https://")
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("Active Monitored Targets & Deletion")
-        
-        try:
-            with get_db_connection() as conn:
-                targets_df = pd.read_sql_query("SELECT id, url, environment_name, strategy, is_active FROM monitored_targets ORDER BY id ASC;", conn)
-            
-            if not targets_df.empty:
-                for idx, row in targets_df.iterrows():
-                    col_info, col_del = st.columns([5, 1])
-                    with col_info:
-                        st.markdown(f"**[{row['environment_name']}]** `{row['url']}` *(Strategy: {row['strategy']})*")
-                    with col_del:
-                        if st.button("🗑️ Delete", key=f"del_target_{row['id']}"):
-                            try:
-                                with get_db_connection() as conn:
-                                    with conn.cursor() as cur:
-                                        cur.execute("DELETE FROM monitored_targets WHERE id = %s;", (row['id'],))
-                                        conn.commit()
-                                st.success(f"Deleted target: {row['url']}")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Failed to delete target: {e}")
-            else:
-                st.info("No monitored targets configured.")
-        except Exception as e:
-            st.info("Monitored targets table not initialized yet. Ensure the database migration script has been run.")
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.expander("📋 View Underlying ISO Quality Audit Records Table"):
+                st.dataframe(df_hub, use_container_width=True)
 
 
-# TAB 7: BASKET CHECKOUT & CARRIAGE TESTING
-tab_idx_carriage = 6 if is_admin else 5
-with tabs[tab_idx_carriage]:
+# TAB 3: BASKET CHECKOUT & CARRIAGE TESTING
+with tabs[2]:
     st.header("🛒 Basket Checkout & Carriage Testing (93,726 Rules Matrix)")
     st.markdown("Monitor synthetic transaction times for carriage rule compliance calculations across your complete UK regional shipping zones and product group matrices (Target SLA: ≤ 1,200 ms).")
 
