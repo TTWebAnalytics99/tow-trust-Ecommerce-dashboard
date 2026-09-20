@@ -99,15 +99,15 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     sub_style = ParagraphStyle('ReportSub', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#5f6368'), spaceAfter=12)
     heading_style = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#202124'), spaceBefore=10, spaceAfter=4)
     body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=9.5, textColor=colors.HexColor('#3c4043'), leading=13, spaceAfter=6)
-    cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#3c4043'), leading=11)
-    cell_header_style = ParagraphStyle('CellHeader', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#174ea6'), fontName='Helvetica-Bold', leading=11)
+    cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#3c4043'), leading=10)
+    cell_header_style = ParagraphStyle('CellHeader', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#174ea6'), fontName='Helvetica-Bold', leading=10)
 
-    story.append(Paragraph("Tow-Trust ECommerce Performance Executive Report", title_style))
+    story.append(Paragraph("Tow-Trust ECommerce Performance & ISP Technical Briefing", title_style))
     story.append(Paragraph(f"Environment: <b>{target_url}</b> | Form Factor: <b>{strategy.capitalize()}</b> | Telemetry Window: <b>{time_range_label}</b>", sub_style))
 
     # SECTION 1: EXECUTIVE SUMMARY & CORE WEB VITALS REFERENCE TABLE
     story.append(Paragraph("1. Executive Summary & Core Web Vitals Reference", heading_style))
-    story.append(Paragraph("This report summarizes synthetic performance audits for non-technical leadership, tracking adherence against standard user experience benchmarks and user journey responsiveness. Key metric definitions are detailed below:", body_style))
+    story.append(Paragraph("This report summarizes synthetic performance audits for leadership and technical infrastructure review, tracking adherence against user experience benchmarks and user journey responsiveness.", body_style))
     
     def_data = [
         [Paragraph("Metric Name", cell_header_style), Paragraph("Plain English Business Definition", cell_header_style), Paragraph("Target Standard", cell_header_style)],
@@ -119,16 +119,16 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     t_def = Table(def_data, colWidths=[140, 240, 120])
     t_def.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e8f0fe')),
-        ('BOTTOMPADDING', (0,0), (-1,0), 6),
-        ('TOPPADDING', (0,0), (-1,0), 6),
+        ('BOTTOMPADDING', (0,0), (-1,0), 5),
+        ('TOPPADDING', (0,0), (-1,0), 5),
         ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f8f9fa')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#dadce0')),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(t_def)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
-    # SECTION 2: HISTORICAL METRICS SUMMARY WITH ACTUAL TELEMETRY & A-F RATINGS
+    # SECTION 2: HISTORICAL METRICS SUMMARY
     story.append(Paragraph("2. Historical Performance & Compliance Summary", heading_style))
     if not df_target.empty:
         mean_score = df_target["perf_score"].mean()
@@ -160,16 +160,22 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
         ]))
         story.append(t_sum)
     
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
-    # SECTION 3: PLAIN ENGLISH STRATEGIC RECOMMENDATIONS & USER JOURNEY INSIGHTS
-    story.append(Paragraph("3. Plain-English Executive Insights & User Journey Actions", heading_style))
-    rec_text = (
-        "• <b>Parts Finder Cascading Latency:</b> Dropdown selections (Make ➔ Model ➔ Year) currently experience noticeable processing pauses during server roundtrips. Indexing relational vehicle datasets and implementing client-side caching will streamline vehicle lookup.<br/><br/>"
-        "• <b>Carriage Rule & Compliance Processing (97,000 Records):</b> Adding items to the basket triggers heavy rule evaluations across 97,000 product compliance records and carrier/postcode matrices. Offloading calculation to asynchronous background jobs or optimized SQL indexing will eliminate checkout stalls.<br/><br/>"
-        "• <b>Catalog & Side Filter Responsiveness:</b> Toggling category filters ('Processing...' pauses) blocks UI interaction. Debouncing filter queries and optimizing AJAX response payloads will ensure instant user feedback."
+    # SECTION 3: COMPREHENSIVE ISP TECHNICAL BRIEFING
+    story.append(Paragraph("3. Technical Deep-Dive & ISP Infrastructure Briefing", heading_style))
+    isp_text = (
+        "<b>A. Carriage Rule Calculation Engine (93,726-Row Matrix):</b><br/>"
+        "• <i>Technical Bottleneck:</i> Basket updates and checkout postcode entry evaluate complex shipping rules across 93,726 active rule records, factoring in carrier tiers, product group tags (e.g., White Products, Box Charges), and weight thresholds.<br/>"
+        "• <i>ISP Action Required:</i> Ensure compound SQL indexing on `(Postal District, Group Name, Display Label)` and implement query-result caching in Redis/Memcached to prevent redundant full-table sequential scans during cart modifications.<br/><br/>"
+        "<b>B. Parts Finder Cascading Dropdowns:</b><br/>"
+        "• <i>Technical Bottleneck:</i> Selecting vehicle makes, models, and years triggers synchronous AJAX database roundtrips for dependent options.<br/>"
+        "• <i>ISP Action Required:</i> Preload serialized vehicle taxonomy JSON structures client-side or implement edge caching to eliminate server roundtrip latency during vehicle selection.<br/><br/>"
+        "<b>C. Catalog & Side Filter Responsiveness:</b><br/>"
+        "• <i>Technical Bottleneck:</i> Frequent 'Processing...' pauses occur when filtering category attributes.<br/>"
+        "• <i>ISP Action Required:</i> Apply input debouncing on side filter checkboxes and paginate DOM rendering to reduce main-thread CPU overhead."
     )
-    story.append(Paragraph(rec_text, body_style))
+    story.append(Paragraph(isp_text, body_style))
 
     doc.build(story)
     buffer.seek(0)
@@ -332,9 +338,9 @@ with tabs[0]:
                 "relevant_to": ["All", "Total Blocking Time (TBT)"]
             },
             {
-                "title": "Carriage Rule & Compliance Processing (97,000 Records)",
-                "tech": f"Synchronous rule evaluation across 97,000 product compliance records on {target_url} basket updates.",
-                "plain": "Adding items to the basket triggers heavy rule calculations to determine carriage surcharges and compliance across nearly 100,000 records, causing temporary loading bars.",
+                "title": "Carriage Rule & Compliance Processing (93,726 Rules)",
+                "tech": f"Synchronous rule evaluation across 93,726 carriage and product group records on {target_url} basket updates.",
+                "plain": "Adding items to the basket triggers heavy rule calculations to determine carriage surcharges across nearly 94,000 matrix rules, causing temporary loading bars.",
                 "location": f"{target_url} cart and checkout rule calculation engine.",
                 "cwv_impact": "Directly impacts transaction processing speed and checkout conversion friction.",
                 "importance": 1,
@@ -634,15 +640,15 @@ with tabs[tab_idx_reporting]:
         
         with ex_col1:
             with st.container(border=True):
-                st.markdown("### 📄 Executive PDF Report")
-                st.markdown(f"Download a professional summary document for **{export_url}** ({export_strategy.capitalize()}, {export_time_range}) complete with plain-English KPI explanations, observed averages, and prioritized optimization recommendations.")
+                st.markdown("### 📄 Executive & ISP Technical PDF Report")
+                st.markdown(f"Download a professional summary document for **{export_url}** ({export_strategy.capitalize()}, {export_time_range}) complete with plain-English KPI explanations, regional carriage SLAs, and detailed technical infrastructure briefs for your ISP.")
                 
-                if st.button("📥 Generate & Download Executive PDF"):
+                if st.button("📥 Generate & Download Executive / ISP PDF"):
                     pdf_bytes = generate_pdf_executive_report(df_filtered_export, export_url, export_strategy, export_time_range)
                     st.download_button(
                         label="💾 Click here to download PDF",
                         data=pdf_bytes,
-                        file_name=f"executive_performance_report_{export_url.replace('https://', '').replace('/', '_')}_{export_strategy}.pdf",
+                        file_name=f"executive_isp_performance_report_{export_url.replace('https://', '').replace('/', '_')}_{export_strategy}.pdf",
                         mime="application/pdf"
                     )
 
@@ -737,8 +743,8 @@ if is_admin:
 # TAB 7: BASKET CHECKOUT & CARRIAGE TESTING
 tab_idx_carriage = 6 if is_admin else 5
 with tabs[tab_idx_carriage]:
-    st.header("🛒 Basket Checkout & Carriage Testing")
-    st.markdown("Monitor synthetic transaction times for carriage rule compliance calculations across different UK regional shipping zones and product group matrices (Target SLA: ≤ 1,200 ms).")
+    st.header("🛒 Basket Checkout & Carriage Testing (93,726 Rules Matrix)")
+    st.markdown("Monitor synthetic transaction times for carriage rule compliance calculations across your complete UK regional shipping zones and product group matrices (Target SLA: ≤ 1,200 ms).")
 
     try:
         with get_db_connection() as conn:
@@ -753,9 +759,13 @@ with tabs[tab_idx_carriage]:
         sla_pass_rate = (len(df_carriage[df_carriage["calculation_duration_ms"] <= 1200]) / len(df_carriage)) * 100
 
         rc1, rc2, rc3 = st.columns(3)
-        rc1.metric("Mean Calculation Latency", f"{avg_carriage_time:.0f} ms", delta="Target: ≤ 1,200 ms", delta_color="normal" if avg_carriage_time <= 1200 else "inverse")
+        rc1.metric("Mean Carriage Calculation Latency", f"{avg_carriage_time:.0f} ms", delta="Target: ≤ 1,200 ms", delta_color="normal" if avg_carriage_time <= 1200 else "inverse")
         rc2.metric("SLA Adherence Rate", f"{sla_pass_rate:.1f}%")
-        rc3.metric("Total Regions Tested", len(df_carriage["region_name"].unique()))
+        rc3.metric("Total Regional SKU Tests", len(df_carriage))
 
         st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### Regional & Product Group SLA Compliance Matrix")
         st.dataframe(df_carriage, use_container_width=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.info("💡 **ISP Technical Summary:** The 93,726-row delivery charges matrix requires compound indexing on `Postal District`, `Group Name`, and `Display Label`. Without indexes, rule lookups result in sequential table scans that exceed the 1.2s SLA during peak basket updates.")
