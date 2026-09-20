@@ -178,7 +178,7 @@ def generate_pdf_executive_report(df_target, target_url, strategy, time_range_la
     buffer.seek(0)
     return buffer.getvalue()
 
-# STREAMLINED 3-TAB LAYOUT (Tab 2: Basket Testing, Tab 3: Advanced Reporting)
+# STREAMLINED 3-TAB LAYOUT
 tabs = st.tabs([
     "📑 Executive Briefing", 
     "🛒 Basket Checkout & Carriage Testing",
@@ -397,17 +397,57 @@ with tabs[2]:
             iq3.metric("Total Quality Audits Logged", total_audits)
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # Trend Analysis Chart
-            st.markdown("### Longitudinal Performance Trends")
-            fig = px.line(
-                df_hub, 
-                x="recorded_at_uk", 
-                y=["lcp_ms", "tbt_ms", "perf_score"],
-                title=f"Performance Trend Analysis for {hub_url} ({hub_strat.capitalize()})",
-                labels={"recorded_at_uk": "Timestamp (UK Time)", "value": "Metric Value", "variable": "Indicator"}
-            )
-            fig.update_traces(line=dict(width=3))
-            st.plotly_chart(fig, use_container_width=True)
+            # Trend Analysis with CWV Checkbox Controls
+            st.markdown("### Longitudinal Performance Trends & KPI Selection")
+            st.markdown("**Select Core Metrics to Plot:**")
+
+            metric_mapping = {
+                "Largest Contentful Paint (LCP)": "lcp_ms",
+                "Total Blocking Time (TBT)": "tbt_ms",
+                "Cumulative Layout Shift (CLS)": "cls",
+                "Server Response Time (TTFB)": "ttfb_ms",
+                "Speed Index": "speed_index_ms",
+                "Performance Score (0-100)": "perf_score"
+            }
+
+            selected_metric_labels = []
+            defaults = ["Largest Contentful Paint (LCP)", "Total Blocking Time (TBT)"]
+
+            row1_cols = st.columns(3)
+            row2_cols = st.columns(3)
+            all_cols = list(row1_cols) + list(row2_cols)
+
+            for i, (label, col_name) in enumerate(metric_mapping.items()):
+                with all_cols[i]:
+                    if st.checkbox(label, value=(label in defaults), key=f"hub_chk_metric_{i}"):
+                        selected_metric_labels.append(label)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            if selected_metric_labels:
+                valid_mappings = {label: col for label, col in metric_mapping.items() if col in df_hub.columns}
+                active_labels = [label for label in selected_metric_labels if label in valid_mappings]
+                plot_columns = [valid_mappings[label] for label in active_labels]
+
+                if plot_columns:
+                    df_plot = df_hub[["recorded_at_uk"] + plot_columns].copy()
+                    rename_dict = {v: k for k, v in valid_mappings.items()}
+                    df_plot = df_plot.rename(columns=rename_dict)
+
+                    fig = px.line(
+                        df_plot, 
+                        x="recorded_at_uk", 
+                        y=active_labels,
+                        title=f"Trend Analysis for {hub_url} ({hub_strat.capitalize()})",
+                        labels={"recorded_at_uk": "Timestamp (UK Time)", "value": "Metric Value", "variable": "Core Web Vital / Driver"}
+                    )
+                    fig.update_traces(line=dict(width=3))
+                    fig.update_layout(
+                        hovermode="closest",
+                        legend=dict(orientation="h", yanchor="bottom", y=-0.4, xanchor="center", x=0.5),
+                        margin=dict(l=20, r=20, t=80, b=70)
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("### Documented Export & Review Center")
